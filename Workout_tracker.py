@@ -32,9 +32,9 @@ Example output:
     "muscle_group": "chest",
     "sets": 3,
     "reps": [10, 8, 6],
-    "weight": 50,
+    "weight": 60,
     "duration_minutes": null,
-    "calories_burned": 120
+    "calories_burned": 50
   },
   {
     "exercise_name": "running",
@@ -69,9 +69,9 @@ Example output:
         print("Failed to parse JSON from model response")
         print(text)
         return None
-
+'''
 if __name__=='__main__':
     OPENROUTER_API_KEY=os.getenv('QWEN3_API_KEY')
     workout_input='I made 3 sets of 10, 8, and 6 reps of bench press at 60kg. Then I walked for 30 minutes.'
     result=generate_workout_summary(workout_input, OPENROUTER_API_KEY)
-    print(json.dumps(result, indent=2))
+    print(json.dumps(result, indent=2))'''
