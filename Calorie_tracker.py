@@ -3,6 +3,7 @@ import requests
 import json
 from dotenv import load_dotenv  
 load_dotenv()
+
 def estimate_calories(food_text, api_key):
     url = "https://openrouter.ai/api/v1/chat/completions"
     headers = {
@@ -26,9 +27,9 @@ Example output:
     {{"food": "milk", "quantity": 1, "Weight":250, "calories": 168, "Proteins":8, "Fats":10, "Carbs":12, "Fiber":0}}
   ],
   "total_calories": 238,
-  "total_protein": 14
-  "total_fat": 15
-  "total_carb": 13
+  "total_protein": 14,
+  "total_fat": 15,
+  "total_carb": 13,
   "total_fiber": 0
 }}
 
@@ -53,8 +54,8 @@ Now process:
         print("Did not return")
         print(text)
         return None
-if __name__ == "__main__":
+'''if __name__ == "__main__":
     OPENROUTER_API_KEY = os.getenv("QWEN3_API_KEY")
     food_input = "I had 100g of paneer and a egg."
     reuslt=estimate_calories(food_input, OPENROUTER_API_KEY)
-    print(json.dumps(reuslt,indent=2))
+    print(json.dumps(reuslt,indent=2))'''
