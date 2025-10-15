@@ -83,7 +83,7 @@ def insert_calories_plan(user_id,calorie_data):
         result=diet_col.insert_one(document)
         print(f"Macro plan inserted with ID: {result.inserted_id}")
         update_daily_progress(user_id,datetime.datetime.utcnow())
-        handle_summary_trigger(user_id,calorie_data.get("daily_summary",{}))
+        handle_summary_trigger(user_id,calorie_data.get("daily_summary",{}),datetime.datetime.utcnow())
         return str(result.inserted_id)
     except Exception as e:
         print(f"Error inserting macro plan: {e}")
@@ -144,12 +144,12 @@ if __name__=='__main__':
     #print("Latest Macro Plan-------")
     #plan=get_latest_macro_plan(user_id)
     #print(plan)
-    #user_id="u001"
-    #calorie_data=estimate_calories('I had 1 boiled eggs for breakfast',os.getenv("QWEN3_API_KEY"))
-    #insert_calories_plan(user_id,calorie_data)
-    #diet=get_latest_calorie(user_id)
-    #print("calore Plan-------")
-    #print(diet)
+    user_id="u001"
+    calorie_data=estimate_calories('I had 1 egg for breakfast',os.getenv("QWEN3_API_KEY"))
+    insert_calories_plan(user_id,calorie_data)
+    diet=get_latest_calorie(user_id)
+    print("calore Plan-------")
+    print(diet)
     #workout_data=generate_workout_summary('I made 3 sets of 10, 8, and 6 reps of bench press at 60kg. Then I walked for 30 minutes.Total duration of the exercise is 45 min.',os.getenv("QWEN3_API_KEY"))
     #insert_workout_plan(user_id,workout_data)
     #WO=get_latest_workout(user_id)
