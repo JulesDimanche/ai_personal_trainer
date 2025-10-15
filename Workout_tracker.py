@@ -11,12 +11,16 @@ def generate_workout_summary(workout_input,api_key):
         "Content-Type": "application/json"}
     system_prompt = """
 You are a fitness tracking assistant. The user will describe their workout in natural language, 
-and your task is to extract structured details about each exercise they performed.
+and your task is to extract structured details about each exercise they performed and also provide a summary.
 
-Return ONLY a valid JSON list (no explanation, no extra text).
+Return ONLY a valid JSON object (no explanation, no extra text).
 Do not include anything outside the JSON. The JSON should be directly parsable using json.loads().
 
-For each exercise, include:
+The JSON object should contain two keys:
+1. "detailed_exercises": a list of all exercises with full details.
+2. "summary": a concise summary including total exercises, total sets, total reps, total duration (for cardio), and estimated total calories burned.
+
+For each exercise in "detailed_exercises", include:
 - exercise_name
 - muscle_group
 - sets
@@ -26,27 +30,37 @@ For each exercise, include:
 - calories_burned (approximate, based on intensity if not given)
 
 Example output:
-[
-  {
-    "exercise_name": "bench press",
-    "muscle_group": "chest",
-    "sets": 3,
-    "reps": [10, 8, 6],
-    "weight": 60,
-    "duration_minutes": null,
-    "calories_burned": 50
-  },
-  {
-    "exercise_name": "running",
-    "muscle_group": "legs",
-    "sets": null,
-    "reps": null,
-    "weight": null,
-    "duration_minutes": 30,
-    "calories_burned": 250
+{
+  "detailed_exercises": [
+    {
+      "exercise_name": "bench press",
+      "muscle_group": "chest",
+      "sets": 3,
+      "reps": [10, 8, 6],
+      "weight": 60,
+      "duration_minutes": null,
+      "calories_burned": 50
+    },
+    {
+      "exercise_name": "running",
+      "muscle_group": "legs",
+      "sets": null,
+      "reps": null,
+      "weight": null,
+      "duration_minutes": 30,
+      "calories_burned": 250
+    }
+  ],
+  "summary": {
+    "total_exercises": 2,
+    "total_sets": 3,
+    "total_reps": 24,
+    "total_duration_minutes": 30,
+    "total_calories_burned": 300
   }
-]
+}
 """
+
     user_prompt=f""" Workout description:
     \"\"\"{workout_input}\"\"\"
     Today's date is {date.today()}.
