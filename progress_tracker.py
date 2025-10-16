@@ -304,8 +304,25 @@ def aggregate_and_adapt_week(user_id: str, week_start_date: str):
     avg_expected_fats = avg_expected_macro_field("fats_g")
 
     # compute weight change in the week if we have at least two weights
-    weights_sorted = sorted(weights)
-    weight_change = None
+    weights_sorted = sorted(weights,key=lambda x:x[0])
+    recent_weights = [w[1] for w in weights_sorted[-3:]] if weights_sorted else []
+    recent_avg_weight = _safe_avg(recent_weights)
+    first_weight = weights_sorted[0][1] if weights_sorted else None
+    last_weight = weights_sorted[-1][1] if weights_sorted else None
+    actual_change = (last_weight - first_weight) if first_weight and last_weight else None
+
+    plan=macro_collection.find_one({"user_id":user_id})
+    last_week_doc=progress_weekly_col.find_one({"user_id": user_id}, sort=[("week_number", -1)])
+    week_number=(last_week_doc["week_number"]+1) if last_week_doc else 1
+    expected_weight = None
+    next_expected_weight = None
+    if plan and "Weekly_Plan" in plan:
+        # current week = week_number - 1 (0-indexed)
+        if len(plan["Weekly_Plan"]) >= week_number:
+            expected_weight = plan["Weekly_Plan"][week_number - 1].get("expected_weight_kg")
+        if len(plan["Weekly_Plan"]) > week_number:
+            next_expected_weight = plan["Weekly_Plan"][week_number].get("expected_weight_kg")
+    '''weight_change = None
     if len(weights) >= 2:
         # better to use first and last days recorded in the docs
         # find earliest and latest weight in the week by date
@@ -317,7 +334,7 @@ def aggregate_and_adapt_week(user_id: str, week_start_date: str):
         if len(weight_by_date) >= 2:
             weight_by_date.sort(key=lambda x: x[0])
             weight_change = weight_by_date[-1][1] - weight_by_date[0][1]
-
+'''
     # Determine adjustment logic (basic rules, can be tuned)
     # We'll use goal from any doc
     goal = docs[0].get("goal", "unspecified")
@@ -336,50 +353,41 @@ def aggregate_and_adapt_week(user_id: str, week_start_date: str):
     # If goal==gain muscle:
     #   - If not gaining, increase calories moderately
     # Otherwise keep same.
-    if goal.lower().find("lose") >= 0:
-        # expected weekly weight change target unknown; we will infer expected weekly change from plan if available
-        # use simple heuristics:
-        if avg_ach_cal is None or avg_expected_cal is None:
-            adjustment_reason = "insufficient data to adjust precisely"
-        else:
-            cal_diff = avg_ach_cal - avg_expected_cal
-            # If consuming significantly more (+ >3%) and not losing weight or gained weight -> reduce calories
-            if cal_diff > (0.03 * avg_expected_cal) and (weight_change is None or weight_change >= -0.25):
-                # reduce by 5% (tunable)
-                adjusted_daily_calories = max(1200, round(avg_expected_cal * 0.95))  # floor for safety
-                adjustment_reason = f"consumed {round(cal_diff,1)} kcal above expected and little weight loss; reducing calories by 5%."
-            elif cal_diff < (-0.08 * avg_expected_cal) and weight_change is not None and weight_change <= -1.0:
-                # losing too fast (>1kg/wk) — increase calories a bit
-                adjusted_daily_calories = round(avg_expected_cal * 1.08)
-                adjustment_reason = "weight loss faster than expected; increasing calories by 8% to prevent excessive loss."
+    if expected_weight and recent_avg_weight:
+        diff=recent_avg_weight-expected_weight
+        if goal.lower().find("lose") >= 0:
+            # expected weekly weight change target unknown; we will infer expected weekly change from plan if available
+            # use simple heuristics:
+            if diff > 0.3:
+                adjusted_daily_calories = round((avg_expected_cal or adjusted_daily_calories) * 0.94)
+                adjustment_reason = f"Weight above expected by {diff:.2f} kg; reducing calories by ~6%."
+            # If user is losing too fast (below expected weight)
+            elif diff < -0.7:
+                adjusted_daily_calories = round((avg_expected_cal or adjusted_daily_calories) * 1.08)
+                adjustment_reason = f"Weight below expected by {abs(diff):.2f} kg; increasing calories by ~8%."
             else:
-                adjustment_reason = "small/no change required; keeping calories similar."
-    elif goal.lower().find("gain") >= 0 or goal.lower().find("muscle") >= 0:
-        if avg_ach_cal is None or avg_expected_cal is None:
-            adjustment_reason = "insufficient data to adjust for gain"
-        else:
-            if weight_change is None or weight_change < 0.2:
-                # not gaining -> increase by 5-7%
-                adjusted_daily_calories = round(avg_expected_cal * 1.06)
-                adjustment_reason = "not gaining appreciably; increasing calories by ~6%."
+                adjustment_reason = "Weight on track with expected; keeping calories similar."
+
+        elif goal.lower().find("gain") >= 0 or goal.lower().find("muscle") >= 0:
+            if diff < -0.2:
+                adjusted_daily_calories = round((avg_expected_cal or adjusted_daily_calories) * 1.06)
+                adjustment_reason = f"Weight below expected by {abs(diff):.2f} kg; increasing calories by ~6%."
+            # If above expected (gaining too fast)
+            elif diff > 0.8:
+                adjusted_daily_calories = round((avg_expected_cal or adjusted_daily_calories) * 0.95)
+                adjustment_reason = f"Weight above expected by {diff:.2f} kg; reducing calories by ~5%."
             else:
-                adjustment_reason = "gaining as expected; keeping calories."
+                adjustment_reason = "Gaining as expected; keeping calories stable."
+        else:
+            adjustment_reason = "Goal not specified; minor/no adjustment applied."
     else:
         # generic rule: if adherence low, lower intensity or adjust macros
-        adjustment_reason = "generic plan; no major calorie adjustment."
+        adjustment_reason = "Insufficient weight data or expected weight missing or no calories adjustment."
 
-    # Adjust macros slightly towards higher protein if weight change not as expected
-    if weight_change is not None and goal.lower().find("lose") >= 0 and weight_change > -0.5:
-        # increase protein by 5-10% to help preserve muscle
-        if adjusted_macros["protein_g"]:
+    if goal.lower().find("lose") >= 0 and adjusted_macros.get("protein_g"):
+        if actual_change is not None and actual_change > -0.3:  # slower than expected loss
             adjusted_macros["protein_g"] = round(adjusted_macros["protein_g"] * 1.08)
             adjustment_reason += " Increased protein by 8% to support fat loss."
-
-    # Compose weekly summary doc
-    # find last stored week for this user and increment
-    last_week_doc = progress_weekly_col.find_one({"user_id": user_id}, sort=[("week_number", -1)])
-    week_number = (last_week_doc["week_number"] + 1) if last_week_doc else 1
-
     #week_number = int(parse_date(week_start_date).isocalendar()[1])
     weekly_doc = {
         "user_id": user_id,
@@ -392,13 +400,14 @@ def aggregate_and_adapt_week(user_id: str, week_start_date: str):
             "carbs_g": avg_ach_carbs,
             "fats_g": avg_ach_fats,
             "workout_intensity": avg_workout,
-            "weight_change": weight_change
+            "weight_change": actual_change
         },
         "adjusted_targets": {
             "daily_calories": adjusted_daily_calories,
             "daily_macros": adjusted_macros,
             # keep workout_intensity similar to average or expected
-            "workout_intensity": avg_workout if avg_workout is not None else (docs[0].get("expected", {}).get("workout_intensity"))
+            "workout_intensity": avg_workout if avg_workout is not None else (docs[0].get("expected", {}).get("workout_intensity")),
+            "target_weight_kg": next_expected_weight
         },
         "adjustment_reason": adjustment_reason,
         "generated_at": iso_date(datetime.utcnow())
@@ -409,7 +418,7 @@ def aggregate_and_adapt_week(user_id: str, week_start_date: str):
 
     # generate next 7 days using adjusted targets
     # --- fetch baseline plan for this user to get next week's expected weight ---
-    plan = macro_collection.find_one({"user_id": user_id})
+    '''plan = macro_collection.find_one({"user_id": user_id})
     next_week_index = week_number  # since current week_number is 1-indexed, next = current
     next_week_weight = None
 
@@ -417,7 +426,7 @@ def aggregate_and_adapt_week(user_id: str, week_start_date: str):
         next_week_weight = plan["Weekly_Plan"][next_week_index].get("expected_weight_kg")
 
     # add expected target weight from macros data (not recalculated)
-    weekly_doc["adjusted_targets"]["target_weight_kg"] = next_week_weight
+    weekly_doc["adjusted_targets"]["target_weight_kg"] = next_week_weight'''
 
     # generate next 7 days using adjusted targets (calories/macros possibly tuned)
     next_week_start = parse_date(week_start_date) + timedelta(days=7)
