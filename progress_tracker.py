@@ -28,7 +28,7 @@ from datetime import datetime, timedelta
 from typing import Dict, Any, Optional, List
 import math
 import os
-from db_connection import progress_col, diet_col, workout_col, user_col, macro_collection,progress_weekly_col,weight_col
+from db_connection import progress_col, diet_col, workout_col, user_col, macro_collection,progress_weekly_col,weight_col,summary_col,workout_summary_col
 
 # ---------- Helpers ----------
 
@@ -50,14 +50,14 @@ def compute_workout_intensity_for_day(user_id: str, date_str: str) -> Optional[f
     Assumes workouts docs have 'calories_burned' (number) and/or 'intensity_score' (number 0-100).
     We'll combine both heuristically.
     """
-    docs = list(workout_col.find({"user_id": user_id, "date": date_str}))
+    docs = list(workout_summary_col.find({"user_id": user_id, "date": date_str}))
     if not docs:
         return None
     # weighted score example: normalize calories and intensity_score
     total_cal = 0
     scores = []
     for doc in docs:
-        summary = doc.get("summary", {})
+        summary = doc.get("summary_text", {})
         total_cal += summary.get("total_calories_burned", 0)
         if summary.get("total_duration_minutes") is not None:
             scores.append(summary["total_duration_minutes"])
@@ -73,11 +73,11 @@ def compute_workout_intensity_for_day(user_id: str, date_str: str) -> Optional[f
     return (cal_mapped * 0.5) + (avg_score * 0.5)
 
 def fetch_daily_calories_and_macros(user_id: str, date_str: str) -> Dict[str, Any]:
-    doc = diet_col.find_one({"user_id": user_id, "date": date_str})
-    if not doc or "summary" not in doc:
+    doc = summary_col.find_one({"user_id": user_id, "date": date_str})
+    if not doc or "summary_text" not in doc:
         return {"calories": None, "macros": None}
 
-    summary = doc["summary"]
+    summary = doc["summary_text"]
     return {
         "calories": summary.get("total_calories"),
         "macros": {
