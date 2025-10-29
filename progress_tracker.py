@@ -103,6 +103,9 @@ def fetch_weight_for_date(user_id: str, date_str: str) -> Optional[float]:
 def create_or_update_progress_doc(user_id: str, date_str: str, expected: Dict[str, Any], achieved: Dict[str, Any], week_number: int, goal: str):
     """
     Insert or update a daily progress document.
+    Notes:
+      - progress_percentage will NOT include a 'weight' key anymore (we use weight_kg in weekly aggregation).
+      - achieved should contain 'weight_kg' when available.
     """
     # calculate progress percentages where possible
     progress_percentage = {}
@@ -120,19 +123,14 @@ def create_or_update_progress_doc(user_id: str, date_str: str, expected: Dict[st
         for k in ["protein_g", "carbs_g", "fats_g"]:
             exp_val = expected["daily_macros"].get(k)
             ach_val = achieved["macros"].get(k)
-            progress_percentage["macros"][k] = round((ach_val / exp_val) * 100, 2) if exp_val and ach_val is not None else None
+            try:
+                progress_percentage["macros"][k] = round((ach_val / exp_val) * 100, 2) if exp_val and ach_val is not None else None
+            except Exception:
+                progress_percentage["macros"][k] = None
     else:
         progress_percentage["macros"] = {"protein_g": None, "carbs_g": None, "fats_g": None}
 
-    # weight progress - we leave weight comparison to weekly aggregation (we can still store if expected weight exists)
-    if expected.get("target_weight_kg") and achieved.get("weight_kg") is not None:
-        # % toward target: this is context dependent (gain or lose). We'll compute relative completion as:
-        # If goal is lose weight: percent = (start_weight - current)/(start_weight - target)*100
-        # But we don't have start here; this is for daily doc - so set None and let weekly use weights.
-        weight_pct = None
-    else:
-        weight_pct = None
-
+    # We do NOT compute a daily 'weight' percentage here. Weekly aggregation will handle weight comparisons using weight_kg.
     doc = {
         "user_id": user_id,
         "date": date_str,
@@ -140,14 +138,12 @@ def create_or_update_progress_doc(user_id: str, date_str: str, expected: Dict[st
         "goal": goal,
         "expected": expected,
         "achieved": achieved,
-        "progress_percentage": {
-            **progress_percentage,
-            "weight": weight_pct
-        },
+        "progress_percentage": progress_percentage,
         "remarks": None
     }
     progress_col.update_one({"user_id": user_id, "date": date_str}, {"$set": doc}, upsert=True)
     return doc
+
 
 def generate_initial_week(user_id: str, plan_id: str, start_date: Optional[str] = None):
     """
@@ -245,6 +241,11 @@ def aggregate_and_adapt_week(user_id: str, week_start_date: str):
     """
     Aggregates the 7-day window starting at week_start_date (YYYY-MM-DD), compares expected vs achieved,
     computes adjustments, stores a weekly_summary doc, and generates the next 7-day window with adjusted targets.
+
+    Key fixes:
+      - weights are collected as (date, weight_kg) tuples and sorted by date.
+      - weekly weight comparison is computed using weight_kg.
+      - adjusted macros fallback to the plan's next-week macros when our computed adjusted_macros are incomplete.
     """
     start_dt = parse_date(week_start_date)
     dates = [iso_date(start_dt + timedelta(days=i)) for i in range(7)]
@@ -253,12 +254,12 @@ def aggregate_and_adapt_week(user_id: str, week_start_date: str):
     if len(docs) < 1:
         raise ValueError("No progress documents found for the week start")
 
-    # compute averages
+    # collect aggregates
     achieved_calories_list = []
     achieved_protein = []
     achieved_carbs = []
     achieved_fats = []
-    weights = []
+    weights_by_date = []  # will store tuples (date_str, weight_kg)
     workout_scores = []
     expected_calories_values = []
     expected_macros_list = []
@@ -266,19 +267,26 @@ def aggregate_and_adapt_week(user_id: str, week_start_date: str):
     for doc in docs:
         ach = doc.get("achieved", {})
         exp = doc.get("expected", {})
+
         if ach.get("calories") is not None:
             achieved_calories_list.append(ach.get("calories"))
+
         macros = ach.get("macros")
         if macros:
             achieved_protein.append(macros.get("protein_g"))
             achieved_carbs.append(macros.get("carbs_g"))
             achieved_fats.append(macros.get("fats_g"))
+
+        # collect weights as (date, value) only when present
         if ach.get("weight_kg") is not None:
-            weights.append(ach.get("weight_kg"))
+            weights_by_date.append((doc["date"], ach.get("weight_kg")))
+
         if ach.get("workout_intensity") is not None:
             workout_scores.append(ach.get("workout_intensity"))
+
         if exp.get("daily_calories") is not None:
             expected_calories_values.append(exp.get("daily_calories"))
+
         if exp.get("daily_macros"):
             expected_macros_list.append(exp.get("daily_macros"))
 
@@ -288,6 +296,7 @@ def aggregate_and_adapt_week(user_id: str, week_start_date: str):
     avg_ach_fats = _safe_avg(achieved_fats)
     avg_workout = _safe_avg(workout_scores)
     avg_expected_cal = _safe_avg(expected_calories_values)
+
     # average expected macros by key
     def avg_expected_macro_field(field):
         vals = []
@@ -296,116 +305,126 @@ def aggregate_and_adapt_week(user_id: str, week_start_date: str):
             try:
                 if val is not None:
                     vals.append(float(val))
-            except ValueError:
+            except Exception:
                 continue
         return _safe_avg(vals)
+
     avg_expected_protein = avg_expected_macro_field("protein_g")
     avg_expected_carbs = avg_expected_macro_field("carbs_g")
     avg_expected_fats = avg_expected_macro_field("fats_g")
 
-    # compute weight change in the week if we have at least two weights
-    weights_sorted = sorted(weights,key=lambda x:x[0])
-    recent_weights = [w[1] for w in weights_sorted[-3:]] if weights_sorted else []
-    recent_avg_weight = _safe_avg(recent_weights)
+    # handle weights: sort by date and compute first/last/recent_avg
+    weights_sorted = sorted(weights_by_date, key=lambda x: x[0])  # sort by ISO date string OK
     first_weight = weights_sorted[0][1] if weights_sorted else None
     last_weight = weights_sorted[-1][1] if weights_sorted else None
-    actual_change = (last_weight - first_weight) if first_weight and last_weight else None
+    # recent average of last up-to-3 recorded values
+    recent_weights_only = [w for (_, w) in weights_sorted[-3:]] if weights_sorted else []
+    recent_avg_weight = _safe_avg(recent_weights_only)
+    actual_change = (last_weight - first_weight) if (first_weight is not None and last_weight is not None) else None
 
-    plan=macro_collection.find_one({"user_id":user_id})
-    last_week_doc=progress_weekly_col.find_one({"user_id": user_id}, sort=[("week_number", -1)])
-    week_number=(last_week_doc["week_number"]+1) if last_week_doc else 1
+    plan = macro_collection.find_one({"user_id": user_id})
+    last_week_doc = progress_weekly_col.find_one({"user_id": user_id}, sort=[("week_number", -1)])
+    week_number = (last_week_doc["week_number"] + 1) if last_week_doc else 1
+
+    # expected weight for this week and next expected weight from plan if available
     expected_weight = None
     next_expected_weight = None
     if plan and "Weekly_Plan" in plan:
-        # current week = week_number - 1 (0-indexed)
+        # plan Weekly_Plan is expected to be a list corresponding to weeks (0-indexed)
         if len(plan["Weekly_Plan"]) >= week_number:
             expected_weight = plan["Weekly_Plan"][week_number - 1].get("expected_weight_kg")
         if len(plan["Weekly_Plan"]) > week_number:
             next_expected_weight = plan["Weekly_Plan"][week_number].get("expected_weight_kg")
-    '''weight_change = None
-    if len(weights) >= 2:
-        # better to use first and last days recorded in the docs
-        # find earliest and latest weight in the week by date
-        weight_by_date = []
-        for doc in docs:
-            wd = doc.get("achieved", {}).get("weight_kg")
-            if wd is not None:
-                weight_by_date.append((doc["date"], wd))
-        if len(weight_by_date) >= 2:
-            weight_by_date.sort(key=lambda x: x[0])
-            weight_change = weight_by_date[-1][1] - weight_by_date[0][1]
-'''
-    # Determine adjustment logic (basic rules, can be tuned)
-    # We'll use goal from any doc
+
+    # Determine adjustment logic (kept and clarified)
     goal = docs[0].get("goal", "unspecified")
     adjustment_reason = ""
-    adjusted_daily_calories = avg_expected_cal or avg_ach_cal or None
+    adjusted_daily_calories = int(round(avg_expected_cal)) if avg_expected_cal is not None else (int(round(avg_ach_cal)) if avg_ach_cal is not None else None)
     adjusted_macros = {
         "protein_g": avg_expected_protein,
         "carbs_g": avg_expected_carbs,
         "fats_g": avg_expected_fats
     }
 
-    # Example rules:
-    # If goal==lose weight:
-    #   - If user ate more than expected and weight loss is less than target (or positive), reduce calories by 5%
-    #   - If user ate less and lost more than expected -> increase slightly to avoid too-fast loss
-    # If goal==gain muscle:
-    #   - If not gaining, increase calories moderately
-    # Otherwise keep same.
-    if expected_weight and recent_avg_weight:
-        diff=recent_avg_weight-expected_weight
-        if goal.lower().find("lose") >= 0:
-            # expected weekly weight change target unknown; we will infer expected weekly change from plan if available
-            # use simple heuristics:
+    # Apply rules using weight_kg comparison to plan expected weight
+    if expected_weight is not None and recent_avg_weight is not None:
+        diff = recent_avg_weight - expected_weight
+        if "lose" in goal.lower():
             if diff > 0.3:
-                adjusted_daily_calories = round((avg_expected_cal or adjusted_daily_calories) * 0.94)
+                adjusted_daily_calories = round((adjusted_daily_calories or avg_ach_cal or 0) * 0.94)
                 adjustment_reason = f"Weight above expected by {diff:.2f} kg; reducing calories by ~6%."
-            # If user is losing too fast (below expected weight)
             elif diff < -0.7:
-                adjusted_daily_calories = round((avg_expected_cal or adjusted_daily_calories) * 1.08)
+                adjusted_daily_calories = round((adjusted_daily_calories or avg_ach_cal or 0) * 1.08)
                 adjustment_reason = f"Weight below expected by {abs(diff):.2f} kg; increasing calories by ~8%."
             else:
                 adjustment_reason = "Weight on track with expected; keeping calories similar."
-
-        elif goal.lower().find("gain") >= 0 or goal.lower().find("muscle") >= 0:
+        elif "gain" in goal.lower() or "muscle" in goal.lower():
             if diff < -0.2:
-                adjusted_daily_calories = round((avg_expected_cal or adjusted_daily_calories) * 1.06)
+                adjusted_daily_calories = round((adjusted_daily_calories or avg_ach_cal or 0) * 1.06)
                 adjustment_reason = f"Weight below expected by {abs(diff):.2f} kg; increasing calories by ~6%."
-            # If above expected (gaining too fast)
             elif diff > 0.8:
-                adjusted_daily_calories = round((avg_expected_cal or adjusted_daily_calories) * 0.95)
+                adjusted_daily_calories = round((adjusted_daily_calories or avg_ach_cal or 0) * 0.95)
                 adjustment_reason = f"Weight above expected by {diff:.2f} kg; reducing calories by ~5%."
             else:
                 adjustment_reason = "Gaining as expected; keeping calories stable."
         else:
             adjustment_reason = "Goal not specified; minor/no adjustment applied."
     else:
-        # generic rule: if adherence low, lower intensity or adjust macros
-        adjustment_reason = "Insufficient weight data or expected weight missing or no calories adjustment."
+        adjustment_reason = "Insufficient weight data or expected weight missing; falling back to adherence rules."
 
-    if goal.lower().find("lose") >= 0 and adjusted_macros.get("protein_g"):
-        if actual_change is not None and actual_change > -0.3:  # slower than expected loss
+    # If losing and actual_change indicates slow loss, slightly increase protein
+    if "lose" in goal.lower() and adjusted_macros.get("protein_g"):
+        if actual_change is not None and actual_change > -0.3:
             adjusted_macros["protein_g"] = round(adjusted_macros["protein_g"] * 1.08)
             adjustment_reason += " Increased protein by 8% to support fat loss."
-    #week_number = int(parse_date(week_start_date).isocalendar()[1])
+
+    # If any macro is None, try to fetch from plan Weekly_Plan for the next week (fallback)
+    if plan and "Weekly_Plan" in plan:
+        # next week index in Weekly_Plan is week_number (0-indexed current week_number-1)
+        if len(plan["Weekly_Plan"]) > week_number:
+            candidate = plan["Weekly_Plan"][week_number].get("expected_macros") or {}
+            # normalize keys if stored differently
+            candidate_norm = {
+                "protein_g": candidate.get("Protein_g") or candidate.get("protein_g"),
+                "carbs_g": candidate.get("Carbs_g") or candidate.get("carbs_g"),
+                "fats_g": candidate.get("Fats_g") or candidate.get("fats_g")
+            }
+            # fill missing macros from candidate
+            for k in ["protein_g", "carbs_g", "fats_g"]:
+                if adjusted_macros.get(k) is None and candidate_norm.get(k) is not None:
+                    try:
+                        adjusted_macros[k] = float(candidate_norm[k])
+                    except Exception:
+                        adjusted_macros[k] = adjusted_macros.get(k)
+
+    # final fallback: if adjusted_macros still incomplete, use plan-level macros
+    if plan and plan.get("Macros"):
+        for src_k, tgt_k in [("Protein_g", "protein_g"), ("Carbs_g", "carbs_g"), ("Fats_g", "fats_g")]:
+            if adjusted_macros.get(tgt_k) is None and plan["Macros"].get(src_k) is not None:
+                try:
+                    adjusted_macros[tgt_k] = float(plan["Macros"].get(src_k))
+                except Exception:
+                    pass
+
     weekly_doc = {
         "user_id": user_id,
         "week_number": week_number,
         "start_date": week_start_date,
         "end_date": iso_date(parse_date(week_start_date) + timedelta(days=6)),
         "average_achieved": {
-            "calories": avg_ach_cal,
-            "protein_g": avg_ach_protein,
-            "carbs_g": avg_ach_carbs,
-            "fats_g": avg_ach_fats,
-            "workout_intensity": avg_workout,
-            "weight_change": actual_change
-        },
+        "calories": round(avg_ach_cal, 2) if avg_ach_cal is not None else None,
+        "protein_g": round(avg_ach_protein, 2) if avg_ach_protein is not None else None,
+        "carbs_g": round(avg_ach_carbs, 2) if avg_ach_carbs is not None else None,
+        "fats_g": round(avg_ach_fats, 2) if avg_ach_fats is not None else None,
+        "workout_intensity": round(avg_workout, 2) if avg_workout is not None else None,
+        "recent_avg_weight_kg": round(recent_avg_weight, 2) if recent_avg_weight is not None else None,
+        "first_week_weight_kg": round(first_weight, 2) if first_weight is not None else None,
+        "last_week_weight_kg": round(last_weight, 2) if last_weight is not None else None,
+        "weight_change_kg": round(actual_change, 2) if actual_change is not None else None
+    },
         "adjusted_targets": {
             "daily_calories": adjusted_daily_calories,
             "daily_macros": adjusted_macros,
-            # keep workout_intensity similar to average or expected
             "workout_intensity": avg_workout if avg_workout is not None else (docs[0].get("expected", {}).get("workout_intensity")),
             "target_weight_kg": next_expected_weight
         },
@@ -414,21 +433,13 @@ def aggregate_and_adapt_week(user_id: str, week_start_date: str):
     }
 
     # store weekly summary
-    progress_weekly_col.update_one({"user_id": user_id, "week_number": week_number, "start_date": week_start_date}, {"$set": weekly_doc}, upsert=True)
+    progress_weekly_col.update_one(
+        {"user_id": user_id, "week_number": week_number, "start_date": week_start_date},
+        {"$set": weekly_doc},
+        upsert=True
+    )
 
     # generate next 7 days using adjusted targets
-    # --- fetch baseline plan for this user to get next week's expected weight ---
-    '''plan = macro_collection.find_one({"user_id": user_id})
-    next_week_index = week_number  # since current week_number is 1-indexed, next = current
-    next_week_weight = None
-
-    if plan and "Weekly_Plan" in plan and len(plan["Weekly_Plan"]) > next_week_index:
-        next_week_weight = plan["Weekly_Plan"][next_week_index].get("expected_weight_kg")
-
-    # add expected target weight from macros data (not recalculated)
-    weekly_doc["adjusted_targets"]["target_weight_kg"] = next_week_weight'''
-
-    # generate next 7 days using adjusted targets (calories/macros possibly tuned)
     next_week_start = parse_date(week_start_date) + timedelta(days=7)
     generated_info = generate_next_week_docs(
         user_id=user_id,
@@ -443,17 +454,53 @@ def aggregate_and_adapt_week(user_id: str, week_start_date: str):
 def generate_next_week_docs(user_id: str, adjusted_targets: Dict[str, Any], start_date: str, week_number: int, goal: str):
     """
     Create 7 new progress documents starting at start_date with adjusted targets.
-    Achieved fields are left null until daily updates run.
+    If adjusted_targets['daily_macros'] is missing/incomplete, try to fetch next-week macros from plan.
     """
+    # ensure adjusted_targets keys are present and normalized
+    daily_calories = adjusted_targets.get("daily_calories")
+    daily_macros = adjusted_targets.get("daily_macros") or {}
+    target_weight = adjusted_targets.get("target_weight_kg")
+    workout_intensity = adjusted_targets.get("workout_intensity")
+
+    # If macros incomplete, try to fetch from plan's Weekly_Plan for the corresponding week_index
+    plan = macro_collection.find_one({"user_id": user_id})
+    if plan and (not daily_macros or any(daily_macros.get(k) is None for k in ["protein_g", "carbs_g", "fats_g"])):
+        # next_week_index = week_number - 1 (because generate_next_week_docs is called for next week)
+        plan_index = week_number - 1
+        if "Weekly_Plan" in plan and len(plan["Weekly_Plan"]) > plan_index:
+            candidate = plan["Weekly_Plan"][plan_index].get("expected_macros") or {}
+            # normalize keys
+            candidate_norm = {
+                "protein_g": candidate.get("Protein_g") or candidate.get("protein_g"),
+                "carbs_g": candidate.get("Carbs_g") or candidate.get("carbs_g"),
+                "fats_g": candidate.get("Fats_g") or candidate.get("fats_g")
+            }
+            for k in ["protein_g", "carbs_g", "fats_g"]:
+                if daily_macros.get(k) is None and candidate_norm.get(k) is not None:
+                    try:
+                        daily_macros[k] = float(candidate_norm[k])
+                    except Exception:
+                        daily_macros[k] = daily_macros.get(k)
+
+    # final fallback to plan-level Macros
+    if plan and plan.get("Macros"):
+        mapping = {"protein_g": "Protein_g", "carbs_g": "Carbs_g", "fats_g": "Fats_g"}
+        for tgt, src in mapping.items():
+            if daily_macros.get(tgt) is None and plan["Macros"].get(src) is not None:
+                try:
+                    daily_macros[tgt] = float(plan["Macros"].get(src))
+                except Exception:
+                    pass
+
     start_dt = parse_date(start_date)
     created = []
     for d in date_range(start_dt, 7):
         date_str = iso_date(d)
         expected = {
-            "daily_calories": adjusted_targets.get("daily_calories"),
-            "daily_macros": adjusted_targets.get("daily_macros"),
-            "target_weight_kg": adjusted_targets.get("target_weight_kg"),
-            "workout_intensity": adjusted_targets.get("workout_intensity")
+            "daily_calories": daily_calories,
+            "daily_macros": daily_macros,
+            "target_weight_kg": target_weight,
+            "workout_intensity": workout_intensity
         }
         achieved = {"calories": None, "macros": None, "workout_intensity": None, "weight_kg": None}
         doc = create_or_update_progress_doc(user_id=user_id, date_str=date_str, expected=expected, achieved=achieved, week_number=week_number, goal=goal)

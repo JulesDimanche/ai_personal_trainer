@@ -1,0 +1,10 @@
+chromadb
+dotenv
+pymongo
+google-genai
+openai
+duckdb
+pandas
+transformers
+accelerate
+torch
