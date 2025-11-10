@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 
 def generate_macro(user_data):
     age = user_data.get('age')
@@ -47,11 +47,13 @@ def generate_macro(user_data):
     target_weight = round(weight + total_change, 1) if not target_weight else target_weight
 
     def calc_macros(calories):
-        protein_kcal = calories * 0.25
-        fat_kcal = calories * 0.25
-        carb_kcal = calories * 0.50
+        protein= target_weight * 2
+        protein_kcal = protein * 4
+        calories= calories - protein_kcal
+        fat_kcal = calories * 0.35
+        carb_kcal = calories * 0.65
         return {
-            "Protein_g": round(protein_kcal / 4, 1),
+            "Protein_g": round(protein, 1),
             "Fats_g": round(fat_kcal / 9, 1),
             "Carbs_g": round(carb_kcal / 4, 1),
             "Fiber_g": round((calories / 1000) * 14, 1)
@@ -70,7 +72,9 @@ def generate_macro(user_data):
             "week_number": week,
             "expected_weight_kg": expected_weight,
             "expected_calories": expected_calories,
-            "expected_macros": expected_macros
+            "expected_macros": expected_macros,
+            "start_date": (datetime.utcnow() + timedelta(weeks=week-1)).date().isoformat(),
+            "end_date": (datetime.utcnow() + timedelta(weeks=week-1,days=6)).date().isoformat()
         })
 
     if weekly_change > 0:
@@ -98,21 +102,20 @@ def generate_macro(user_data):
 
     return plan
 
-'''
+
 # --- Optional: Example test ---
 if __name__ == "__main__":
     user_profile = {
-        "user_id": "u001",
+        "user_id": "u002",
         "age": 25,
         "gender": "male",
-        "weight_kg": 75,
+        "weight_kg": 65,
         "target_weight_kg": 70,
-        "height_cm": 175,
+        "height_cm": 169,
         "activity_level": "moderate",
-        "goal": "fat_loss",
+        "goal": "weight_gain",
         "target_weeks": 8
     }
 
     result = generate_macro(user_profile)
     print(json.dumps(result, indent=2))
-'''
