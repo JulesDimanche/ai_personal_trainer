@@ -4,75 +4,14 @@ import re
 from datetime import datetime, timedelta
 from dateutil import parser
 from pymongo import MongoClient
-from openai import OpenAI
 from db_connection import db, workout_col
-from dotenv import load_dotenv
 
-load_dotenv()
-
-client_deepseek = OpenAI(
-    api_key=os.environ.get("DEEPSEEK_API_KEY"),
-    base_url="https://openrouter.ai/api/v1"
-)
-
-MODEL_NAME = "deepseek/deepseek-chat-v3.1:free"
-
-EXTRA_HEADERS = {
-    "HTTP-Referer": os.environ.get("SITE_URL", "http://localhost"),
-    "X-Title": os.environ.get("SITE_NAME", "MongoDB Workout Query System")
-}
-
-
-# ----------- ENTITY EXTRACTION -----------
-
-def extract_workout_query_entities(user_input):
-    prompt = f"""
-You are a precise information extractor for a fitness tracking assistant.
-Extract the following from the user input:
-
-1. intent — choose from ["daily_workout", "weekly_summary", "exercise_details", "other"]
-2. start_date — in ISO format (YYYY-MM-DD) if mentioned and this is the start date, else null
-3. end_date — in ISO format (YYYY-MM-DD) if mentioned and this is the end date, else null
-4. exercise — if any specific exercise is mentioned, else null
-
-User input: "{user_input}"
-
-Respond ONLY in JSON like this:
-{{
-  "intent": "daily_workout",
-  "start_date": "2025-10-13",
-  "end_date": "2025-10-21",
-  "exercise": "bench press"
-}}
-"""
-    try:
-        response = client_deepseek.chat.completions.create(
-            model=MODEL_NAME,
-            messages=[
-                {"role": "system", "content": "You extract structured data from text."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.1
-        )
-
-        text = response.choices[0].message.content.strip()
-        json_match = re.search(r'\{[\s\S]*\}', text)
-        if not json_match:
-            raise ValueError("No JSON object found in model output.")
-
-        clean_text = json_match.group(0)
-        data = json.loads(clean_text)
-        return data
-
-    except Exception as e:
-        print(f"❌ Extraction error: {e}")
-        return {"intent": "daily_workout", "start_date": None, "end_date": None, "exercise": None}
 
 
 # ----------- QUERY TEMPLATES -----------
 
 WORKOUT_QUERY_TEMPLATES = {
-    "daily_workout": lambda date, user_id: {
+    "workout": lambda date, user_id: {
         "collection": "workouts_logs",
         "filter": {"user_id": user_id, "date": date},
         "projection": {
@@ -86,12 +25,6 @@ WORKOUT_QUERY_TEMPLATES = {
             "summary": 1,
             "_id": 0
         }
-    },
-
-    "weekly_summary": lambda start_date, end_date, user_id: {
-        "collection": "workouts_logs",
-        "filter": {"user_id": user_id, "date": {"$gte": start_date, "$lte": end_date}},
-        "projection": {"date": 1, "summary": 1, "_id": 0}
     },
 
     "exercise_details": lambda exercise_name, user_id: {
@@ -109,47 +42,21 @@ WORKOUT_QUERY_TEMPLATES = {
     },
 }
 
-
-# ----------- DATE UTIL -----------
-
 def get_week_range_from_date(date_str):
     dt = datetime.fromisoformat(date_str)
     start = dt - timedelta(days=dt.weekday())
     end = start + timedelta(days=6)
     return start.isoformat(), end.isoformat()
 
-
-# ----------- QUERY BUILDER -----------
-
-def build_workout_query(user_input, user_id):
-    entities = extract_workout_query_entities(user_input)
-    intent = entities.get("intent", "daily_workout")
+def build_workout_query(data, user_id):
+    entities=data
+    intent = entities.get("intent", "workout")
     start_date = entities.get("start_date")
     end_date = entities.get("end_date")
     exercise = entities.get("exercise")
 
-    if intent == "daily_workout":
-        date = start_date or datetime.now().date().isoformat()
-        return WORKOUT_QUERY_TEMPLATES[intent](date, user_id)
-
-    elif intent == "weekly_summary":
-        if not start_date or not end_date:
-            end_date = datetime.now().date().isoformat()
-            start_date = (datetime.now().date() - timedelta(days=6)).isoformat()
-        return WORKOUT_QUERY_TEMPLATES[intent](start_date, end_date, user_id)
-
-    elif intent == "exercise_details":
-        if not exercise:
-            print("⚠️ No exercise detected, defaulting to all exercises.")
-            exercise = ""
-        return WORKOUT_QUERY_TEMPLATES[intent](exercise, user_id)
-
-    else:
-        date = start_date or datetime.now().date().isoformat()
-        return WORKOUT_QUERY_TEMPLATES["daily_workout"](date, user_id)
-
-
-# ----------- QUERY EXECUTION -----------
+    date = start_date or end_date
+    return WORKOUT_QUERY_TEMPLATES[intent](date, user_id)
 
 def execute_workout_query(query_json):
     try:
@@ -182,54 +89,56 @@ def execute_workout_query(query_json):
         print(f"❌ Query execution error: {str(e)}")
         return []
 
-
-# ----------- RESPONSE FORMATTING -----------
-
-def format_workout_response(user_input, query_data):
+def format_workout_response(query_data):
     if not query_data:
-        return "No workout records found for that date."
+        return "No workout records found."
 
     try:
         safe_data = json.loads(json.dumps(query_data, default=str))
-        prompt = f"""
-You are a helpful fitness assistant.
-The user asked: "{user_input}"
 
-Here is the retrieved data from MongoDB:
-{json.dumps(safe_data, indent=2)}
+        lines = []
+        lines.append("Workout Summary:\n")
 
-Format this into a clear, readable workout summary for the user.
-- List exercises, sets, reps, weights, calories burned, and any daily or weekly totals.
-- Highlight workout volume and intensity.
-- Be concise but informative.
-"""
-        messages = [
-            {"role": "system", "content": "You are a helpful and precise fitness assistant."},
-            {"role": "user", "content": prompt}
-        ]
+        for entry in safe_data:
+            workout_list = entry.get("workout_data", [])
+            summary = entry.get("summary", {})
 
-        response = client_deepseek.chat.completions.create(
-            model=MODEL_NAME,
-            messages=messages,
-            temperature=0.2,
-            extra_headers=EXTRA_HEADERS
-        )
+            for w in workout_list:
+                exercise = w.get("exercise_name", "Unknown exercise")
+                muscle = w.get("muscle_group", "Unknown muscle")
+                sets = w.get("sets", "N/A")
+                reps = w.get("reps", [])
+                weight = w.get("weight", "N/A")
+                duration = w.get("duration_minutes", "N/A")
+                calories = w.get("calories_burned", "N/A")
 
-        formatted_response = response.choices[0].message.content.strip() if response and response.choices else "No response generated."
-        return formatted_response
+                rep_str = ", ".join(str(r) for r in reps) if reps else "N/A"
+
+                lines.append(f"Exercise: {exercise}")
+                lines.append(f"- Muscle Group: {muscle}")
+                lines.append(f"- Sets: {sets} | Reps: {rep_str} | Weight: {weight} kg")
+                lines.append(f"- Duration: {duration} min | Calories Burned: {calories}")
+                lines.append("")
+
+            if summary:
+                lines.append("Overall Summary:")
+                lines.append(f"- Total Exercises: {summary.get('total_exercises', 'N/A')}")
+                lines.append(f"- Total Sets: {summary.get('total_sets', 'N/A')}")
+                lines.append(f"- Total Reps: {summary.get('total_reps', 'N/A')}")
+                lines.append(f"- Total Duration: {summary.get('total_duration_minutes', 'N/A')} minutes")
+                lines.append(f"- Total Calories Burned: {summary.get('total_calories_burned', 'N/A')}")
+                lines.append("")
+
+        return "\n".join(lines)
 
     except Exception as e:
-        print(f"❌ Formatting error: {str(e)}")
-        return "An error occurred while formatting the response."
-
-
-# ----------- MAIN TEST -----------
+        print(f"Formatting error: {str(e)}")
+        return "Formatting error."
 
 if __name__ == "__main__":
     user_id = "u001"
-    user_input = "show my chest workouts today"
-    query = build_workout_query(user_input, user_id)
+    query = build_workout_query({'intent': 'workout', 'start_date': None, 'end_date': '2025-10-24', 'exercise': "bench press"}, user_id)
     print("Generated Query:", query)
     results = execute_workout_query(query)
     print("Result:", results)
-    print(format_workout_response(user_input, results))
+    print(format_workout_response(results))

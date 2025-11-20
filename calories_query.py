@@ -5,69 +5,10 @@ import re
 from datetime import datetime, timedelta
 from dateutil import parser
 from pymongo import MongoClient
-from openai import OpenAI
 from db_connection import db, diet_col
-from dotenv import load_dotenv
-
-load_dotenv()
-
-client_deepseek = OpenAI(
-    api_key=os.environ.get("DEEPSEEK_API_KEY"),
-    base_url="https://openrouter.ai/api/v1"
-)
-
-MODEL_NAME = "deepseek/deepseek-chat-v3.1:free"
-
-EXTRA_HEADERS = {
-    "HTTP-Referer": os.environ.get("SITE_URL", "http://localhost"),
-    "X-Title": os.environ.get("SITE_NAME", "MongoDB Query System")
-}
-
-def extract_query_entities(user_input):
-    prompt = f"""
-You are a precise information extractor for a nutrition tracking assistant.
-Extract the following from the user input:
-
-1. intent — choose from ["daily_food", "weekly_summary", "food_details", "other"]
-2. start_date — in ISO format (YYYY-MM-DD) if mentioned and this is the start date, else null
-3. end_date — in ISO format (YYYY-MM-DD) if mentioned and this is the end date, else null
-4. food — if any specific food item is mentioned, else null
-
-User input: "{user_input}"
-
-Respond ONLY in JSON like this:
-{{
-  "intent": "daily_food",
-  "start_date": "2025-10-13",
-  "end_date": "2025-10-21",
-  "food": "banana"
-}}
-"""
-
-    try:
-        response = client_deepseek.chat.completions.create(
-            model=MODEL_NAME,  
-            messages=[{"role": "system", "content": "You extract structured data from text."},
-                      {"role": "user", "content": prompt}],
-            temperature=0.1
-        )
-
-        text = response.choices[0].message.content.strip()
-        json_match = re.search(r'\{[\s\S]*\}', text)
-        if not json_match:
-            raise ValueError("No JSON object found in model output.")
-
-        clean_text = json_match.group(0)
-        data = json.loads(clean_text)
-        return data
-
-    except Exception as e:
-        print(f"❌ Extraction error: {e}")
-        return {"intent": "daily_food", "start_date": None,"end_date":None, "food": None}
-
 
 QUERY_TEMPLATES = {
-    "daily_food": lambda date, user_id: {
+    "calories": lambda date, user_id: {
         "collection": "diet_logs",
         "filter": {"user_id": user_id, "date": date},
         "projection": {
@@ -81,13 +22,6 @@ QUERY_TEMPLATES = {
             "plan_data.items.carbs": 1,
             "_id": 0
         }
-    },
-    "weekly_summary": lambda start_date, end_date, user_id: {
-        "collection": "diet_logs",
-        "filter": {"user_id": user_id, "date": {"$gte": start_date, "$lte": end_date}},
-        "projection": {"plan_data.items.food": 1,
-            "plan_data.items.weight": 1,
-            "plan_data.items.calories": 1, "date": 1, "_id": 0}
     },
     "food_details": lambda food_name, user_id: {
         "collection": "diet_logs",
@@ -104,43 +38,16 @@ QUERY_TEMPLATES = {
     },
 }
     
-def get_week_range_from_date(date_str):
-    dt = datetime.fromisoformat(date_str)
-    start = dt - timedelta(days=dt.weekday())     
-    end = start + timedelta(days=6)               
-    return start.isoformat(), end.isoformat()
 
-def build_query(user_input, user_id):
-
-    entities = extract_query_entities(user_input)
-    intent = entities.get("intent", "daily_food")
+def build_query(data, user_id):
+    entities=data
+    intent = entities.get("intent", "calories")
     start_date = entities.get("start_date")
     end_date = entities.get("end_date")
     food_name = entities.get("food")
 
-    if intent == "daily_food":
-        date = start_date or datetime.now().date().isoformat()
-        return QUERY_TEMPLATES[intent](date, user_id)
-
-    elif intent == "weekly_summary":
-        if start_date and end_date:
-            pass
-        elif not start_date and not end_date:
-            end_date = end_date or datetime.now().date().isoformat()
-            start_date = start_date or (datetime.now().date()-timedelta(days=30)).isoformat()
-        else:
-            start_date, end_date = get_week_range_from_date(start_date)
-        return QUERY_TEMPLATES[intent](start_date, end_date, user_id)
-
-    elif intent == "food_details":
-        if not food_name:
-            print("⚠️ No food detected, defaulting to all food items.")
-            food_name = ""
-        return QUERY_TEMPLATES[intent](food_name, user_id)
-
-    else:
-        date = start_date or datetime.now().date().isoformat()
-        return QUERY_TEMPLATES["daily_food"](date, user_id)
+    date = start_date or end_date
+    return QUERY_TEMPLATES[intent](date, user_id)
 
 def execute_query(query_json):
     try:
@@ -173,42 +80,51 @@ def execute_query(query_json):
         print(f"❌ Query execution error: {str(e)}")
         return []
 
-def format_response(user_input, query_data):
+def format_response(query_data):
     if not query_data:
-        return "No food intake records found for that date."
+        return "No food intake records found."
+
     try:
-        safe_data=json.loads(json.dumps(query_data,default=str))
-        prompt=f"""You are a helpful nutrition assistant.
-        The user asked: "{user_input}"
+        safe_data = json.loads(json.dumps(query_data, default=str))
 
-        Here is the retrieved data from MongoDB:
-        {json.dumps(safe_data, indent=2)}
+        lines = []
+        lines.append("Food Intake Summary:\n")
 
-        Format the data into a clear, human-readable summary relevant to the user's question.
-        Use bullet points appropriate.
-        Be concise but complete. Mention food, quantities, calories, and any patterns or insights.
-"""
-        messages = [
-            {"role": "system", "content":"You are a helpful and precise nutrition assistant." },
-            {"role":"user","content":prompt}]
-        response = client_deepseek.chat.completions.create(
-            model=MODEL_NAME,
-            messages=messages,
-            temperature=0.2,
-            extra_headers=EXTRA_HEADERS
-        )
-        formatted_response = response.choices[0].message.content.strip() if response and response.choices else "No response generated."
-        return formatted_response
+        for entry in safe_data:
+            plan_data = entry.get("plan_data", [])
+
+            for meal in plan_data:
+                meal_type = meal.get("meal_type", "Unknown meal")
+                items = meal.get("items", [])
+
+                lines.append(f"Meal: {meal_type}")
+
+                for item in items:
+                    food = item.get("food", "Unknown")
+                    qty = item.get("quantity", "N/A")
+                    weight = item.get("weight", "N/A")
+                    calories = item.get("calories", "N/A")
+                    protein = item.get("proteins", "N/A")
+                    fats = item.get("fats", "N/A")
+                    carbs = item.get("carbs", "N/A")
+
+                    lines.append(f"- Food: {food} | Qty: {qty} | Weight: {weight}g")
+                    lines.append(f"  Calories: {calories} | Protein: {protein}g | Fat: {fats}g | Carbs: {carbs}g")
+
+                lines.append("")
+        return "\n".join(lines)
+
     except Exception as e:
-        print(f"❌ Formatting error: {str(e)}")
-        return "An error occurred while formatting the response."
-    
+        print(f"Formatting error: {str(e)}")
+        return "Formatting error."
+
+
 
 if __name__ == "__main__":
     user_id='u001'
-    user_input = "what foods i intake most often?"
-    query = build_query(user_input,user_id)
+    data={'intent': 'calories', 'backend': 'mongo', 'query_text': 'show macros on 2025-10-21', 'start_date': '2025-10-21', 'end_date': '2025-10-21', 'data': None, 'summary': None}
+    query = build_query(data,user_id)
     print("Generated Query:", query)
     results = execute_query(query)
     print('the result is: ',results)
-    print(format_response(user_input, results))
+    print(format_response(results))
