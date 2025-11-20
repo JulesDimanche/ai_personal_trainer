@@ -6,83 +6,27 @@ from datetime import datetime, timedelta
 from pymongo import MongoClient
 from openai import OpenAI
 from db_connection import db
-from dotenv import load_dotenv
 
-load_dotenv()
-
-# --------------------------------------------------------------------
-# MODEL SETUP
-# --------------------------------------------------------------------
-client_deepseek = OpenAI(
-    api_key=os.environ.get("DEEPSEEK_API_KEY"),
-    base_url="https://openrouter.ai/api/v1"
-)
-
-MODEL_NAME = "deepseek/deepseek-chat-v3.1:free"
-
-EXTRA_HEADERS = {
-    "HTTP-Referer": os.environ.get("SITE_URL", "http://localhost"),
-    "X-Title": os.environ.get("SITE_NAME", "Weekly Progress Query System")
-}
-
-weekly_col = db["weekly_progress"]
-
-# --------------------------------------------------------------------
-# ENTITY EXTRACTION (LLM)
-# --------------------------------------------------------------------
-def extract_query_entities(user_input):
-    prompt = f"""
-You are an intelligent query extractor for a fitness tracking assistant.
-
-From the user's question, extract the following fields in JSON format:
-1. intent — choose from ["weekly_summary", "trend", "targets", "adjustments", "weight_change", "other"]
-2. start_date — ISO date (YYYY-MM-DD) if mentioned, else null
-3. end_date — ISO date (YYYY-MM-DD) if mentioned, else null
-4. week_number — integer if mentioned, else null
-
-Example output:
-{{
-  "intent": "weekly_summary",
-  "start_date": "2025-10-06",
-  "end_date": "2025-10-12",
-  "week_number": 2
-}}
-
-User input: "{user_input}"
-"""
-
-    try:
-        response = client_deepseek.chat.completions.create(
-            model=MODEL_NAME,
-            messages=[
-                {"role": "system", "content": "You extract structured fields from user fitness queries."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.1,
-            extra_headers=EXTRA_HEADERS
-        )
-
-        text = response.choices[0].message.content.strip()
-        json_match = re.search(r'\{[\s\S]*\}', text)
-        if not json_match:
-            raise ValueError("No JSON object found in model output.")
-        data = json.loads(json_match.group(0))
-        return data
-
-    except Exception as e:
-        print(f"❌ Extraction error: {e}")
-        return {"intent": "weekly_summary", "start_date": None, "end_date": None, "week_number": None}
-
-# --------------------------------------------------------------------
-# QUERY TEMPLATES
-# --------------------------------------------------------------------
 QUERY_TEMPLATES = {
-    "weekly_summary": lambda start_date, end_date, user_id: {
+    "weekly_progress": lambda start_date, end_date, user_id: {
         "collection": "weekly_progress",
         "filter": {
             "user_id": user_id,
-            **({"start_date": {"$gte": start_date}} if start_date else {}),
-            **({"end_date": {"$lte": end_date}} if end_date else {})
+            **(# Case 1: both provided → overlap logic
+            {
+                "start_date": {"$lte": end_date},
+                "end_date": {"$gte": start_date}
+            } if start_date and end_date else
+            # Case 2: only start_date → stored_end >= start_date
+            {
+                "end_date": {"$gte": start_date}
+            } if start_date else
+            # Case 3: only end_date → stored_start <= end_date
+            {
+                "start_date": {"$lte": end_date}
+            } if end_date else
+            # Case 4: none → return all
+            {})
         },
         "projection": {
             "start_date": 1,
@@ -142,28 +86,16 @@ QUERY_TEMPLATES = {
     },
 }
 
-# --------------------------------------------------------------------
-# MAIN QUERY BUILDER
-# --------------------------------------------------------------------
 def build_query(user_input, user_id):
-    entities = extract_query_entities(user_input)
-    intent = entities.get("intent", "weekly_summary")
+    entities=user_input
+    intent = entities.get("intent", "weekly_progress")
     start_date = entities.get("start_date")
     end_date = entities.get("end_date")
     week_number = entities.get("week_number")
 
-    if intent == "weekly_summary":
-        return QUERY_TEMPLATES["weekly_summary"](start_date, end_date, user_id)
+    return QUERY_TEMPLATES["weekly_progress"](start_date, end_date, user_id)
 
-    elif intent in QUERY_TEMPLATES:
-        return QUERY_TEMPLATES[intent](user_id)
-
-    else:
-        return QUERY_TEMPLATES["weekly_summary"](start_date, end_date, user_id)
-
-# --------------------------------------------------------------------
-# EXECUTION
-# --------------------------------------------------------------------
+    
 def execute_query(query_json):
     try:
         if isinstance(query_json, str):
@@ -190,52 +122,67 @@ def execute_query(query_json):
     except Exception as e:
         print(f"❌ Query execution error: {str(e)}")
         return []
-
-# --------------------------------------------------------------------
-# RESPONSE FORMATTING
-# --------------------------------------------------------------------
-def format_response(user_input, query_data):
+    
+def format_response(query_data):
     if not query_data:
-        return "No weekly progress data found for the requested period."
+        return "No weekly adjustment data found."
 
     try:
-        safe_data = json.loads(json.dumps(query_data, default=str))
-        prompt = f"""
-You are a fitness progress summarizer.
-The user asked: "{user_input}"
+        data = json.loads(json.dumps(query_data, default=str))
+        lines = []
+        lines.append("Weekly Adjustment Summary:\n")
 
-Here is the weekly progress data from MongoDB:
-{json.dumps(safe_data, indent=2)}
+        for week in data:
+            week_num = week.get("week_number", "N/A")
+            start = week.get("start_date", "N/A")
+            end = week.get("end_date", "N/A")
 
-Summarize clearly:
-- Mention the week range and number.
-- Report average calories, macros, and workout intensity.
-- Mention any adjustment reasons or weight changes.
-Be concise and readable.
-"""
-        response = client_deepseek.chat.completions.create(
-            model=MODEL_NAME,
-            messages=[
-                {"role": "system", "content": "You are a helpful fitness assistant."},
-                {"role": "user", "content": prompt},
-            ],
-            temperature=0.2,
-            extra_headers=EXTRA_HEADERS,
-        )
-        formatted = response.choices[0].message.content.strip()
-        return formatted
+            lines.append(f"Week {week_num}: {start} to {end}\n")
+
+            # -------- Adjusted Targets --------
+            adj = week.get("adjusted_targets", {})
+            macros = adj.get("daily_macros", {})
+
+            lines.append("Adjusted Targets:")
+            lines.append(f"- Daily Calories: {adj.get('daily_calories', 'N/A')}")
+            lines.append(
+                f"- Macros: Protein {macros.get('protein_g','N/A')}g | "
+                f"Carbs {macros.get('carbs_g','N/A')}g | "
+                f"Fats {macros.get('fats_g','N/A')}g"
+            )
+            lines.append(f"- Workout Intensity: {adj.get('workout_intensity', 'N/A')}")
+            lines.append(f"- Target Weight: {adj.get('target_weight_kg', 'N/A')} kg\n")
+
+            # -------- Average Achieved --------
+            achieved = week.get("average_achieved", {})
+
+            lines.append("Average Achieved:")
+            lines.append(f"- Calories: {achieved.get('calories', 'N/A')}")
+            lines.append(f"- Protein: {achieved.get('protein_g', 'N/A')} g")
+            lines.append(f"- Carbs: {achieved.get('carbs_g', 'N/A')} g")
+            lines.append(f"- Fats: {achieved.get('fats_g', 'N/A')} g")
+            lines.append(f"- Workout Intensity: {achieved.get('workout_intensity', 'N/A')}")
+            lines.append(f"- Recent Avg Weight: {achieved.get('recent_avg_weight_kg', 'N/A')} kg")
+            lines.append(f"- First Week Weight: {achieved.get('first_week_weight_kg', 'N/A')} kg")
+            lines.append(f"- Last Week Weight: {achieved.get('last_week_weight_kg', 'N/A')} kg")
+            lines.append(f"- Weight Change: {achieved.get('weight_change_kg', 'N/A')} kg")
+
+            lines.append("")  # blank line after each week
+
+        return "\n".join(lines)
+
     except Exception as e:
-        print(f"❌ Formatting error: {str(e)}")
-        return "An error occurred while formatting the response."
+        print("Formatting error:", e)
+        return "Formatting error."
+    
 
-# --------------------------------------------------------------------
-# TEST
-# --------------------------------------------------------------------
 if __name__ == "__main__":
     user_id = "u001"
     user_input = "show me my weekly summary for the last weeks"
-    query = build_query(user_input, user_id)
+    data={"intent":"weekly_summary","start_date":"2025-10-14","end_date":"2025-10-22","week_number":None}
+    query = build_query(data, user_id)
     print("Generated Query:", query)
     results = execute_query(query)
     print("Results:", results)
-    print(format_response(user_input, results))
+    print(format_response(results))
+
