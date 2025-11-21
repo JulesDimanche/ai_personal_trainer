@@ -16,7 +16,7 @@ client_deepseek = OpenAI(
     base_url="https://openrouter.ai/api/v1"
 )
 
-MODEL_NAME = "deepseek/deepseek-chat-v3.1:free"
+MODEL_NAME = "x-ai/grok-4.1-fast"
 
 EXTRA_HEADERS = {
     "HTTP-Referer": os.environ.get("SITE_URL", "http://localhost"),
@@ -28,11 +28,16 @@ DUCKDB_PATH = os.getenv("DUCKDB_PATH", "trainer.duckdb")
 # --------------------------------------------------------------------
 # SQL SAFETY HELPERS
 # --------------------------------------------------------------------
-FORBIDDEN = ["insert", "update", "delete", "drop", "alter", "create", "attach", "pragma", ";"]
+FORBIDDEN = ["insert", "update", "delete", "drop", "alter", "create", "attach", "pragma"]
 
 def is_sql_safe(sql: str) -> Tuple[bool, str]:
     lower = sql.lower()
-    if ";" in sql.strip():
+    sql_stripped = sql.strip()
+    if sql_stripped.endswith(";"):
+        sql_stripped = sql_stripped[:-1] 
+        sql = sql_stripped
+
+    if ";" in sql_stripped:
         return False, "Multiple statements or semicolon detected."
     for bad in FORBIDDEN:
         if bad in lower:
@@ -80,7 +85,7 @@ def build_schema_prompt(user_id) -> str:
         "### TASK ###\n"
         "You are an expert SQL generator. Produce **one DuckDB-compatible SQL query** that answers the question below.\n"
         "- Use only SELECT statements (no modifications).\n"
-        "- Always filter results by the user's ID `user_id = '{user_id}'`.\n"
+        f"- Always filter results by the user's ID `user_id = '{user_id}'`.\n"
         "- Prefer grouping, aggregation, and date-based summaries.\n"
         "- Output only SQL — no commentary, no markdown.\n"
         
@@ -132,7 +137,8 @@ def generate_sql(user_question: str, user_id: str, max_retries: int = 2) -> str:
             continue
 
         # Extract SQL text
-        raw = re.sub(r"```[\s\S]*?```", "", raw, flags=re.IGNORECASE)
+        raw = re.sub(r"```+\s*sql", "", raw, flags=re.IGNORECASE)
+        raw = re.sub(r"```+", "", raw).strip()
         m = re.search(r"(select[\s\S]*?)(?=;|\Z)", raw, re.IGNORECASE)
         sql_candidate = m.group(1).strip() if m else raw.strip()
         sql_candidate = re.sub(r";+", "", sql_candidate).strip()
@@ -156,9 +162,6 @@ def generate_sql(user_question: str, user_id: str, max_retries: int = 2) -> str:
 
     raise ValueError(f"❌ Failed to produce valid SQL: {last_error or 'unknown error'}")
 
-# --------------------------------------------------------------------
-# SQL EXECUTION
-# --------------------------------------------------------------------
 def execute_sql_on_duckdb(sql: str, duckdb_path: str = DUCKDB_PATH):
     con = duckdb.connect(duckdb_path)
     if re.search(r'\blimit\b', sql, flags=re.IGNORECASE) is None:
@@ -170,3 +173,8 @@ def execute_sql_on_duckdb(sql: str, duckdb_path: str = DUCKDB_PATH):
         return df
     finally:
         con.close()
+if __name__=="__main__":
+    gen=generate_sql('fetch daily calorie intake data','u001')
+    print('the query is: ',gen)
+    ans=execute_sql_on_duckdb(gen)
+    print('Then ans is: ',ans)
