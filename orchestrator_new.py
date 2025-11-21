@@ -1,30 +1,23 @@
-# query_orchestrator.py
 import os
 import json
 import re
 from datetime import datetime
 from typing import List, Dict, Any
-
+from fitness_coach import run_coach_reasoning_engine
 from openai import OpenAI
 from dotenv import load_dotenv
 load_dotenv()
 
-# -------------------------
-# LLM client (same pattern as other files)
-# -------------------------
 client_deepseek = OpenAI(
     api_key=os.environ.get("DEEPSEEK_API_KEY"),
     base_url="https://openrouter.ai/api/v1"
 )
-MODEL_NAME = "deepseek/deepseek-chat-v3.1:free"
+MODEL_NAME = "x-ai/grok-4.1-fast"
 EXTRA_HEADERS = {
     "HTTP-Referer": os.environ.get("SITE_URL", "http://localhost"),
     "X-Title": os.environ.get("SITE_NAME", "Query Orchestrator")
 }
 
-# -------------------------
-# Try to import existing handlers (fall back gracefully)
-# -------------------------
 try:
     import calories_query as mongo_calories
 except Exception:
@@ -40,7 +33,10 @@ try:
 except Exception:
     mongo_weekly = None
 
-# DuckDB SQL generators / executors
+try:
+    import macros_query as mongo_macros
+except Exception:
+    mongo_macros = None
 try:
     import text_to_sql_runner as sql_runner
 except Exception:
@@ -51,14 +47,7 @@ try:
 except Exception:
     sql_progress = None
 
-'''try:
-    import text_to_sql_weekly as sql_weekly
-except Exception:
-    sql_weekly = None'''
 
-# -------------------------
-# Utility: small date helper
-# -------------------------
 def days_between(start_iso: str, end_iso: str) -> int:
     try:
         s = datetime.fromisoformat(start_iso).date()
@@ -67,23 +56,88 @@ def days_between(start_iso: str, end_iso: str) -> int:
     except Exception:
         return 0
 
-# -------------------------
-# 1) Split user query into domain sub-queries using LLM
-# -------------------------
 SPLIT_PROMPT = """
-You are an assistant that breaks a user's natural-language fitness question into a list of sub-questions each mapped to an intent.
-Return valid JSON: a list of objects with keys: intent, subquery, start_date (ISO or null), end_date (ISO or null).
-Intents allowed: calories, workout, daily_progress, weekly_progress, other.
-Example output:
-[
-  {{"intent":"calories", "subquery":"show calories for last 7 days", "start_date":"2025-10-20", "end_date":"2025-10-26"}},
-  {{"intent":"workout", "subquery":"how intense were my workouts this week","start_date":null,"end_date":null}}
-]
+You are an assistant that breaks a user's natural-language fitness question into a list of precise sub-queries.
+Today's date is {today_date}.
+
+Each subquery must be a JSON object with keys:
+  - intent: one of ["calories", "workout", "daily_progress", "weekly_progress", "macros", "other", "reasoning"]
+  - subquery: short actionable text to send to the backend module
+  - start_date: ISO format YYYY-MM-DD or null
+  - end_date: ISO format YYYY-MM-DD or null
+
+================ RULES ================
+
+1. **INTENT: reasoning**
+   Use this when the user asks *why*, *explain*, *reason*, *what caused*, *why not improving*, 
+   or any deep analysis question that requires reasoning beyond data lookup.
+   - reasoning intent DOES NOT fetch data.
+   - reasoning intent is sent to a separate reasoning module.
+   - reasoning intent must appear **after** the data-fetch intents.
+
+   Example:
+     User: "why my bench press strength is not improving?"
+     Output:
+       - workout → fetch relevant exercises data
+       - reasoning → "explain why bench press strength not improving"
+
+2. **INTENT: other**
+   Use this when the user is asking for:
+   - general answering
+   - comparisons
+   - insights
+   - summary
+   - general explanation that does NOT require deep reasoning.
+
+   Example:
+     User: "compare my weekly macros"
+       - macros  → fetch data
+       - other   → final answering
+
+3. **Data intents**
+   (calories, workout, daily_progress, weekly_progress, macros)
+   Trigger these only when needed to fetch actual data.
+
+4. **Date handling rules**
+   - If user gives explicit dates → convert them to ISO
+   - If user gives ranges → produce period queries
+   - If reasoning or other intent → dates should be null unless user explicitly mentions them
+
+5. **Order of generated subqueries**
+   - Always list data-fetch intents first
+   - reasoning or other intents must always be last
+
+6. **Comparison logic**
+   - For comparing discrete dates → one subquery per date
+   - For continuous ranges → one subquery covering full range
+   - reasoning → always null dates
+   - other → null dates unless range comparison
+
+7. **Keep subquery short and actionable**
+   Example: 
+     "show weekly macros from 2025-01-10 to 2025-01-17"
+     "explain why bench strength not improving"
+8. For any "why", "reason", "explain", or stagnation-related questions 
+   (e.g., "why my muscle not growing", "why strength not improving"):
+   - Automatically include ALL relevant data intents required for analysis:
+       • workout (always)
+       • calories (always)
+       • macros (if related to muscle, strength, weight, or nutrition)
+       • progress data if the question mentions growth, improvement, regression
+   - The reasoning intent must ALWAYS come last.
+   - Dates must be null unless the user specifies time periods.
+
+----------------------------------------
+
 User question: "{user_question}"
 """
 
+
+
+
 def split_into_subqueries(user_question: str) -> List[Dict[str, Any]]:
-    prompt = SPLIT_PROMPT.format(user_question=user_question)
+    today_str=datetime.now().date().isoformat()
+    prompt = SPLIT_PROMPT.format(user_question=user_question,today_date=today_str)
     try:
         resp = client_deepseek.chat.completions.create(
             model=MODEL_NAME,
@@ -96,48 +150,49 @@ def split_into_subqueries(user_question: str) -> List[Dict[str, Any]]:
             max_tokens=600
         )
         raw = resp.choices[0].message.content.strip()
-        # try to extract JSON
         m = re.search(r'(\[.*\])', raw, re.S)
         if not m:
-            # try to parse raw
             data = json.loads(raw)
         else:
             data = json.loads(m.group(1))
         return data if isinstance(data, list) else []
     except Exception as e:
-        # fallback: treat entire query as a generic "other" single subquery
         return [{"intent":"other", "subquery": user_question, "start_date": None, "end_date": None}]
 
-# -------------------------
-# 2) Router: which backend to use for a subquery?
-#    rules:
-#      - daily (<=2 days) -> mongo if available
-#      - weekly_progress or long date range (>2 days) -> duckdb if available
-#      - progress intents -> duckdb preferred
-# -------------------------
 def choose_backend_for_subquery(intent: str, start_date: str, end_date: str) -> str:
+
     intent = (intent or "").lower()
+
+    days = 0
+    if start_date and end_date:
+        try:
+            s = datetime.fromisoformat(start_date).date()
+            e = datetime.fromisoformat(end_date).date()
+            days = abs((e - s).days)
+        except Exception:
+            days = 0
+
     if intent in ("daily_progress", "progress"):
         return "duckdb"
-    if intent == "weekly_progress" or intent == "weekly":
+
+    if intent == "weekly_progress":
         return "mongo"
-    # for calories/workout, use mongo for short ranges, duckdb for long range / heavy aggregations
-    if intent in ("calories","workout"):
-        if start_date and end_date:
-            days = days_between(start_date, end_date)
-            if days <= 2:
-                return "mongo"
-            else:
-                return "duckdb"
-        # if no dates provided, prefer mongo for quick recent queries
+    if intent=="macros":
         return "mongo"
-    # default
+    if intent in ("calories", "workout"):
+        if days > 0 or (not start_date and not end_date):
+            return "duckdb"
+        elif days == 0 and (not start_date or not end_date):
+            return "mongo"
+        else:
+            return "mongo"
+
+    if intent == "other":
+        return "duckdb" if days > 2 else "mongo"
+
     return "mongo"
 
-# -------------------------
-# 3) Execute one subquery by calling the appropriate module
-#    Each handler returns a serializable Python object (list/dict) and a short text summary.
-# -------------------------
+
 def run_subquery_item(item: Dict[str, Any], user_id: str) -> Dict[str, Any]:
     intent = (item.get("intent") or "other").lower()
     text = item.get("subquery") or item.get("query") or ""
@@ -147,49 +202,38 @@ def run_subquery_item(item: Dict[str, Any], user_id: str) -> Dict[str, Any]:
     backend = choose_backend_for_subquery(intent, start_date, end_date)
 
     result = {"intent": intent, "backend": backend, "query_text": text, "data": None, "summary": None}
-
-    # MONGO path
     if backend == "mongo":
         try:
             if intent == "calories" and mongo_calories:
-                q = mongo_calories.build_query(text, user_id)
+                q = mongo_calories.build_query(item, user_id)
                 rows = mongo_calories.execute_query(q)
                 result["data"] = rows
-                try:
-                    result["summary"] = mongo_calories.format_response(text, rows)
-                except Exception:
-                    result["summary"] = None
                 return result
 
             if intent == "workout" and mongo_workout:
-                q = mongo_workout.build_query(text, user_id)
-                rows = mongo_workout.execute_query(q)
+                q = mongo_workout.build_workout_query(item, user_id)
+                rows = mongo_workout.execute_workout_query(q)
                 result["data"] = rows
-                try:
-                    result["summary"] = mongo_workout.format_response(text, rows)
-                except Exception:
-                    result["summary"] = None
                 return result
 
             if intent == "weekly_progress" and mongo_weekly:
-                q = mongo_weekly.build_query(text, user_id)
+                q = mongo_weekly.build_query(item, user_id)
                 rows = mongo_weekly.execute_query(q)
                 result["data"] = rows
-                try:
-                    result["summary"] = mongo_weekly.format_response(text, rows)
-                except Exception:
-                    result["summary"] = None
+                return result
+            if intent == "macros" and mongo_macros:
+                q = mongo_macros.build_macros_query(item, user_id)
+                rows = mongo_macros.execute_macros_query(q)
+                result["data"] = rows
                 return result
 
-            # generic fallback: try calories module then weekly
             if mongo_calories:
-                q = mongo_calories.build_query(text, user_id)
+                q = mongo_calories.build_query(item, user_id)
                 rows = mongo_calories.execute_query(q)
                 result["data"] = rows
                 result["summary"] = None
                 return result
 
-            # if none available
             result["data"] = []
             return result
 
@@ -197,10 +241,8 @@ def run_subquery_item(item: Dict[str, Any], user_id: str) -> Dict[str, Any]:
             result["error"] = str(e)
             return result
 
-    # DUCKDB path
     else:
         try:
-            # progress table (daily progress)
             if intent in ("daily_progress","progress") and sql_progress:
                 sql = sql_progress.generate_sql(text, user_id)
                 df = sql_progress.execute_sql_on_duckdb(sql)
@@ -208,15 +250,6 @@ def run_subquery_item(item: Dict[str, Any], user_id: str) -> Dict[str, Any]:
                 result["summary"] = None
                 return result
 
-            # weekly analytic
-            """if intent in ("weekly_progress","weekly") and sql_weekly:
-                sql = sql_weekly.generate_sql(text, user_id)
-                df = sql_weekly.execute_sql_on_duckdb(sql)
-                result["data"] = json.loads(df.to_json(orient="records", date_format="iso"))
-                result["summary"] = None
-                return result"""
-
-            # foods / workouts analytics via sql_runner
             if intent == "calories" and sql_runner:
                 sql = sql_runner.generate_sql(text, user_id)
                 df = sql_runner.execute_sql_on_duckdb(sql)
@@ -229,7 +262,6 @@ def run_subquery_item(item: Dict[str, Any], user_id: str) -> Dict[str, Any]:
                 result["data"] = json.loads(df.to_json(orient="records", date_format="iso"))
                 return result
 
-            # fallback
             result["data"] = []
             return result
 
@@ -237,9 +269,6 @@ def run_subquery_item(item: Dict[str, Any], user_id: str) -> Dict[str, Any]:
             result["error"] = str(e)
             return result
 
-# -------------------------
-# 4) Merge results into context & ask final LLM to answer like a personal trainer
-# -------------------------
 FINAL_PROMPT_TEMPLATE = """
 You are an expert personal trainer and data-informed coach.
 The user asked: "{user_question}"
@@ -271,37 +300,38 @@ def synthesize_final_answer(user_question: str, collected: Dict[str, Any]) -> st
     )
     return resp.choices[0].message.content.strip()
 
-# -------------------------
-# Orchestrator entrypoint
-# -------------------------
 def answer_user_query(user_question: str, user_id: str) -> Dict[str, Any]:
-    # 1. split
     subqueries = split_into_subqueries(user_question)
-
-    # 2. run each subquery and collect
+    #print("Subqueries generated:", subqueries)
     collected = {}
     details = []
+    main_user_query =""
+    reason_user_query=""
     for item in subqueries:
+        intent = (item.get("intent") or "").lower()
+        if intent == "other":
+            main_user_query = item.get("subquery", "")
+            continue
+        if intent == "reasoning":
+            reason_user_query = item.get("subquery", "")
+            continue
         res = run_subquery_item(item, user_id)
         details.append(res)
         k = res["intent"]
-        # append or set
         if k in collected:
-            collected[k].append(res)
+            collected[k].append(res["data"])
         else:
-            collected[k] = [res]
+            collected[k] = [res["data"]]
+    #check the collected dict
+    #print("Collected subquery results:", collected)
+    final_answer = synthesize_final_answer(main_user_query, collected) if main_user_query else ""
+    resoning_answer=run_coach_reasoning_engine(reason_user_query, collected) if reason_user_query else ""
+    return {"answer": final_answer+resoning_answer, "details": details}
 
-    # 3. final LLM synthesis
-    final_answer = synthesize_final_answer(user_question, collected)
-
-    return {"answer": final_answer, "details": details}
-
-# -------------------------
-# Quick test when run directly
-# -------------------------
 if __name__ == "__main__":
     user_id = "u001"
-    q = "How did my calories and workout intensity compare today and 24-10-2025? Any recommendations?"
+    q = "Why my chest is not growing."
     out = answer_user_query(q, user_id)
+    #print("the query is :",out)
     print("FINAL ANSWER:\n", out["answer"])
-    print("\nDETAILS:\n", json.dumps(out["details"], indent=2, default=str))
+    #print("\nDETAILS:\n", json.dumps(out["details"], indent=2, default=str))
