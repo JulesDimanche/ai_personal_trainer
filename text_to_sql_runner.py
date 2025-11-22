@@ -4,20 +4,19 @@ import duckdb
 from openai import OpenAI
 from functools import lru_cache
 from typing import Tuple
-from dotenv import load_dotenv
-load_dotenv()
+from orchestrator_new import client_deepseek,EXTRA_HEADERS
 
-client_deepseek = OpenAI(
+'''client_deepseek = OpenAI(
     api_key=os.environ.get("QWEN3_API_KEY"),
     base_url="https://openrouter.ai/api/v1"
 )
 
-MODEL_NAME = "x-ai/grok-4.1-fast"
 
 EXTRA_HEADERS = {
     "HTTP-Referer": os.environ.get("SITE_URL", "http://localhost"),
     "X-Title": os.environ.get("SITE_NAME", "MongoDB Query System")
-}
+}'''
+MODEL_NAME = "x-ai/grok-4.1-fast"
 
 DUCKDB_PATH = os.getenv("DUCKDB_PATH", "trainer.duckdb")
 
@@ -104,7 +103,6 @@ def generate_sql(user_question: str, user_id: str, max_retries: int = 2) -> str:
         except Exception as e:
             last_error = str(e)
             continue
-        print("the raw sql generated is: ",raw)
 
         raw = re.sub(r"```+\s*sql", "", raw, flags=re.IGNORECASE)
         raw = re.sub(r"```+", "", raw).strip()
@@ -151,7 +149,7 @@ def execute_sql_on_duckdb(sql: str, duckdb_path: str = DUCKDB_PATH):
     finally:
         con.close()
 if __name__=="__main__":
-    gen=generate_sql('fetch relevant chest exercises data','u001')
+    gen=generate_sql('chest workout','u001')
     print('the query is: ',gen)
     ans=execute_sql_on_duckdb(gen)
     print('Then ans is: ',ans)

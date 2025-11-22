@@ -5,23 +5,22 @@ import duckdb
 from openai import OpenAI
 from functools import lru_cache
 from typing import Tuple
-from dotenv import load_dotenv
-load_dotenv()
+from orchestrator_new import client_deepseek, EXTRA_HEADERS
 
 # --------------------------------------------------------------------
 # API CLIENT CONFIG (OpenRouter + DeepSeek)
 # --------------------------------------------------------------------
-client_deepseek = OpenAI(
+'''client_deepseek = OpenAI(
     api_key=os.environ.get("DEEPSEEK_API_KEY"),
     base_url="https://openrouter.ai/api/v1"
 )
 
-MODEL_NAME = "x-ai/grok-4.1-fast"
 
 EXTRA_HEADERS = {
     "HTTP-Referer": os.environ.get("SITE_URL", "http://localhost"),
     "X-Title": os.environ.get("SITE_NAME", "Progress SQL Generator")
-}
+}'''
+MODEL_NAME = "x-ai/grok-4.1-fast"
 
 DUCKDB_PATH = os.getenv("DUCKDB_PATH", "trainer.duckdb")
 
