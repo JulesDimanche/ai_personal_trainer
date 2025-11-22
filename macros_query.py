@@ -11,7 +11,7 @@ from db_connection import db
 def build_macros_query(data, user_id):
     start_date = data.get("start_date", None)
     end_date=data.get("end_date",None)
-    if (start_date and end_date) and (start_date!=end_date):
+    if ((start_date and end_date) and (start_date!=end_date)) or (not start_date and not end_date):
         intent="full_details"
     else:
         intent="day"
@@ -208,7 +208,7 @@ def format_macros_response(query_data):
 
 if __name__ == "__main__":
     user_id = "u002"
-    query = build_macros_query({'intent': 'day', 'start_date': '2025-11-20' ,"end_date":"2025-11-30"}, user_id)
+    query = build_macros_query({'intent': 'macros', 'subquery': 'show macros for 2025-10-21', 'start_date': '2025-11-20', 'end_date': '2025-11-20'}, user_id)
     print("Generated Query:", query)
     results = execute_macros_query(query)
     print("Result:", results)
