@@ -4,6 +4,7 @@ import re
 from datetime import datetime
 from typing import List, Dict, Any
 from fitness_coach import run_coach_reasoning_engine
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from openai import OpenAI
 from dotenv import load_dotenv
 load_dotenv()
@@ -305,23 +306,38 @@ def answer_user_query(user_question: str, user_id: str) -> Dict[str, Any]:
     #print("Subqueries generated:", subqueries)
     collected = {}
     details = []
+    data_subqueries=[]
     main_user_query =""
     reason_user_query=""
     for item in subqueries:
         intent = (item.get("intent") or "").lower()
         if intent == "other":
             main_user_query = item.get("subquery", "")
-            continue
-        if intent == "reasoning":
+        elif intent == "reasoning":
             reason_user_query = item.get("subquery", "")
-            continue
-        res = run_subquery_item(item, user_id)
-        details.append(res)
-        k = res["intent"]
-        if k in collected:
-            collected[k].append(res["data"])
         else:
-            collected[k] = [res["data"]]
+            data_subqueries.append(item)
+    MAX_THREADS = 5
+    with ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
+        future_to_item = {executor.submit(run_subquery_item, item, user_id): item 
+                          for item in data_subqueries}
+        for future in as_completed(future_to_item):
+            item = future_to_item[future]
+            try:
+                res = future.result()
+            except Exception as e:
+                res = {
+                    "intent": (item.get("intent") or "unknown"),
+                    "backend": None,
+                    "query_text": item.get("subquery", ""),
+                    "data": None,
+                    "error": str(e),
+                }
+            details.append(res)
+            k = res.get("intent","unknown")
+            if k not in collected:
+                collected[k] = []
+            collected[k].append(res.get("data"))
     #check the collected dict
     #print("Collected subquery results:", collected)
     final_answer = synthesize_final_answer(main_user_query, collected) if main_user_query else ""
