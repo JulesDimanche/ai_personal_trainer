@@ -194,7 +194,7 @@ def update_daily_progress(user_id: str, date_obj: datetime):
     Pull data from calories/workouts/weights collections for the date and update the progress doc.
     If expected isn't present (no progress doc), this function will attempt to compute expected from plan.
     """
-    date_str = iso_date(date_obj)
+    date_str = date_obj
     # fetch existing progress doc to get expected values
     existing = progress_col.find_one({"user_id": user_id, "date": date_str})
     if existing:
@@ -509,32 +509,29 @@ def generate_next_week_docs(user_id: str, adjusted_targets: Dict[str, Any], star
 
 # ---------- Example usage ----------
 if __name__ == "__main__":
-    # Example: adapt for user 'user123' and plan with id 'plan123'
-    # You must replace with actual user_id and plan _id from your DB
-
     USER_ID = "u001"
     PLAN_ID = "68e7d0f5c735f1588a6fff17"  # replace with actual ObjectId or string key used in your plans collection
 
     # 1) Generate initial week (call when plan is created / user confirms)
-    try:
+    '''try:
         print("Generating initial week...")
-        res = generate_initial_week(USER_ID, PLAN_ID)
+        res = generate_initial_week(USER_ID, PLAN_ID,"2025-10-13")
         print(res)
     except Exception as e:
-        print("Initial week generation error:", e)
+        print("Initial week generation error:", e)'''
 
     # 2) Daily update (call every day or on event)
-    today = datetime.utcnow()
+    '''today = '2025-10-24'
     try:
         print("Updating today's progress...")
         updated = update_daily_progress(USER_ID, today)
         print("Updated doc date:", updated["date"])
     except Exception as e:
-        print("Daily update error:", e)
+        print("Daily update error:", e)'''
 
     # 3) At week end, aggregate & adapt (provide the week start date)
     # Suppose week starts on 2025-10-06
-    WEEK_START = "2025-10-13"
+    WEEK_START = "2025-10-27"
     try:
         print("Aggregating & adapting week starting:", WEEK_START)
         adapt_res = aggregate_and_adapt_week(USER_ID, WEEK_START)
