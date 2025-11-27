@@ -145,7 +145,7 @@ def create_or_update_progress_doc(user_id: str, date_str: str, expected: Dict[st
     return doc
 
 
-def generate_initial_week(user_id: str, plan_id: str, start_date: Optional[str] = None):
+def generate_initial_week(user_id: str, start_date):
     """
     Generate the initial 7-day progress docs for a plan.
     plan document expected to contain: daily_calories, daily_macros, target_weight_kg, workout_intensity, goal, time_period_days, start_date
@@ -153,10 +153,9 @@ def generate_initial_week(user_id: str, plan_id: str, start_date: Optional[str] 
     plan = macro_collection.find_one({"user_id": user_id})
     if not plan:
         raise ValueError(f"{user_id} not found")
+    start_dt=start_date
 
-    if start_date:
-        start_dt = parse_date(start_date)
-    else:
+    if not start_date:
         start_dt = parse_date(plan.get("start_date")) if plan.get("start_date") else datetime.utcnow()
 
     base_expected = {
@@ -194,6 +193,9 @@ def update_daily_progress(user_id: str, date_obj: datetime):
     Pull data from calories/workouts/weights collections for the date and update the progress doc.
     If expected isn't present (no progress doc), this function will attempt to compute expected from plan.
     """
+    '''if isinstance(date_obj, datetime):
+        date_str = date_obj.strftime("%Y-%m-%d")
+    else:'''
     date_str = date_obj
     # fetch existing progress doc to get expected values
     existing = progress_col.find_one({"user_id": user_id, "date": date_str})
@@ -515,7 +517,7 @@ if __name__ == "__main__":
     # 1) Generate initial week (call when plan is created / user confirms)
     '''try:
         print("Generating initial week...")
-        res = generate_initial_week(USER_ID, PLAN_ID,"2025-10-13")
+        res = generate_initial_week(USER_ID,"2025-10-13")
         print(res)
     except Exception as e:
         print("Initial week generation error:", e)'''

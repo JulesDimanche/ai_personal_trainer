@@ -1,4 +1,4 @@
-chromadb
+faiss
 dotenv
 pymongo
 google-genai
@@ -8,3 +8,4 @@ pandas
 transformers
 accelerate
 torch
+fastapi

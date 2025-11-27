@@ -10,9 +10,6 @@ from openai import OpenAI
 from dotenv import load_dotenv
 load_dotenv()
 
-# -------------------------
-# LLM client (same pattern as other files)
-# -------------------------
 client_deepseek = OpenAI(
     api_key=os.environ.get("DEEPSEEK_API_KEY"),
     base_url="https://openrouter.ai/api/v1"
@@ -24,8 +21,8 @@ EXTRA_HEADERS = {
 }
 
 BASE_DIR = os.path.dirname(__file__)
-KB_INDEX_PATH = os.path.join(BASE_DIR, "fitness_kb.index")
-KB_JSON_PATH = os.path.join(BASE_DIR, "fitness_kb.json")
+KB_INDEX_PATH = os.path.join(BASE_DIR, "Fitness_kb/fitness_kb.index")
+KB_JSON_PATH = os.path.join(BASE_DIR, "Fitness_kb/fitness_kb.json")
 
 faiss_index = faiss.read_index(KB_INDEX_PATH)
 

@@ -4,10 +4,11 @@ import requests
 from datetime import date
 from dotenv import load_dotenv  
 load_dotenv()
-def generate_workout_summary(workout_input,api_key):
+OPENROUTER_API_KEY=os.getenv('QWEN3_API_KEY')
+def generate_workout_summary(workout_input):
     url = "https://openrouter.ai/api/v1/chat/completions"
     headers = {
-        "Authorization": f"Bearer {api_key}",
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
         "Content-Type": "application/json"}
     system_prompt = """
 You are a fitness tracking assistant. The user will describe their workout in natural language, 
@@ -67,7 +68,7 @@ Example output:
     Generate the structured JSON summary.
     """
     data={
-        'model':"qwen/qwen-2.5-coder-32b-instruct:free",
+        'model':"x-ai/grok-4.1-fast",
         'messages':[
             {'role':'system', 'content':system_prompt},
             {'role':'user', 'content':user_prompt}

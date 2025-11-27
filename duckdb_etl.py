@@ -116,11 +116,15 @@ def init_schema():
         con.execute(f"INSERT INTO {ETL_METADATA_TABLE} VALUES ('last_etl_run', NULL);")
 
 
-"""def get_last_etl_run() -> datetime:
-    row = con.execute(f"SELECT value FROM {ETL_METADATA_TABLE} WHERE key='last_etl_run'").fetchall()
-    if row and row[0][0]:
-        return datetime.fromisoformat(row[0][0])
-    return None"""
+def get_last_etl_run() -> datetime | None:
+    row = con.execute(
+        f"SELECT value FROM {ETL_METADATA_TABLE} WHERE key='last_etl_run'"
+    ).fetchone()
+
+    if row and row[0]:
+        return datetime.fromisoformat(row[0])
+
+    return None
 
 
 def set_last_etl_run(ts: datetime):
@@ -274,12 +278,35 @@ def etl_incremental():
     - Works correctly even if ETL runs multiple times per day.
     """
     init_schema()
-    today_str = datetime.utcnow().strftime("%Y-%m-%d")  # always use fresh current UTC timestamp
-    query={"date": today_str}
-    # Fetch changed documents
-    diet_docs = list(diet_col.find(query))
-    workout_docs = list(workout_col.find(query))
-    progress_docs = list(progress_col.find())
+    # Load last ETL timestamp
+    last_run = get_last_etl_run()
+
+# If first run → full load
+    if last_run is None:
+        print("First ETL run: performing full sync")
+        diet_docs = list(diet_col.find())
+        workout_docs = list(workout_col.find())
+        progress_docs = list(progress_col.find())
+    else:
+        print(f"Incremental ETL from {last_run}")
+
+        # Diet → use summary.created_at
+        diet_docs = list(
+            diet_col.find({
+                "summary.created_at": {"$gte": last_run.isoformat()}
+            })
+        )
+
+        # Workout → use root created_at
+        workout_docs = list(
+            workout_col.find({
+                "created_at": {"$gte": last_run}
+            })
+        )
+
+        # Progress → full sync
+        progress_docs = list(progress_col.find())
+
 
     # Flatten documents
     diet_rows, diet_ids_to_delete = [], []

@@ -3,7 +3,7 @@ import json
 import re
 from datetime import datetime
 from typing import List, Dict, Any
-from fitness_coach import run_coach_reasoning_engine
+from Fitness_kb.fitness_coach import run_coach_reasoning_engine
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -20,31 +20,31 @@ EXTRA_HEADERS = {
 }
 
 try:
-    import calories_query as mongo_calories
+    import query.calories_query as mongo_calories
 except Exception:
     mongo_calories = None
 
 try:
-    import workout_query as mongo_workout
+    import query.workout_query as mongo_workout
 except Exception:
     mongo_workout = None
 
 try:
-    import weekly_prog_query as mongo_weekly
+    import query.weekly_prog_query as mongo_weekly
 except Exception:
     mongo_weekly = None
 
 try:
-    import macros_query as mongo_macros
+    import query.macros_query as mongo_macros
 except Exception:
     mongo_macros = None
 try:
-    import text_to_sql_runner as sql_runner
+    import sql_query.text_to_sql_runner as sql_runner
 except Exception:
     sql_runner = None
 
 try:
-    import text_to_sql_prog as sql_progress
+    import sql_query.text_to_sql_prog as sql_progress
 except Exception:
     sql_progress = None
 
@@ -342,7 +342,7 @@ def answer_user_query(user_question: str, user_id: str) -> Dict[str, Any]:
     #print("Collected subquery results:", collected)
     final_answer = synthesize_final_answer(main_user_query, collected) if main_user_query else ""
     resoning_answer=run_coach_reasoning_engine(reason_user_query, collected) if reason_user_query else ""
-    return {"answer": final_answer+resoning_answer, "details": details}
+    return {"answer": final_answer+resoning_answer}
 
 if __name__ == "__main__":
     user_id = "u001"

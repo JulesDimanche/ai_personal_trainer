@@ -20,8 +20,8 @@ FITNESS_KB = [
 
 def build_vector_db(
     kb_items: List[str],
-    json_output_path="fitness_kb.json",
-    index_output_path="fitness_kb.index",
+    json_output_path="Fitness_kb/fitness_kb.json",
+    index_output_path="Fitness_kb/fitness_kb.index",
     embedding_model_name="sentence-transformers/all-MiniLM-L6-v2"
 ):
     print("Loading embedding model...")
