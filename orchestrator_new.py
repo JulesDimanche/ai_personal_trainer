@@ -33,6 +33,10 @@ try:
     import sql_query.text_to_sql_runner as sql_runner
 except Exception:
     sql_runner = None
+try:
+    import sql_query.text_to_sql_prog as sql_progress
+except Exception:
+    sql_progress = None
 
 load_dotenv()
 
