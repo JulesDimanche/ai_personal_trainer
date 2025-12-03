@@ -10,6 +10,30 @@ from google import genai
 from google.genai.errors import APIError
 from dotenv import load_dotenv
 
+try:
+    import query.calories_query as mongo_calories
+except Exception:
+    mongo_calories = None
+
+try:
+    import query.workout_query as mongo_workout
+except Exception:
+    mongo_workout = None
+
+try:
+    import query.weekly_prog_query as mongo_weekly
+except Exception:
+    mongo_weekly = None
+
+try:
+    import query.macros_query as mongo_macros
+except Exception:
+    mongo_macros = None
+try:
+    import sql_query.text_to_sql_runner as sql_runner
+except Exception:
+    sql_runner = None
+
 load_dotenv()
 
 # --- Gemini API Setup ---
@@ -160,13 +184,72 @@ def run_subquery_item(item: Dict[str, Any], user_id: str) -> Dict[str, Any]:
 
     result = {"intent": intent, "backend": backend, "query_text": text, "data": [], "summary": None}
     
-    # Placeholder/Mock for actual DB interaction
     if backend == "mongo":
-        result["data"] = [{"date": start_date or datetime.now().date().isoformat(), "mock_data": f"Mongo result for {intent}"}]
-    else: # duckdb
-        result["data"] = [{"date": start_date or datetime.now().date().isoformat(), "mock_data": f"DuckDB result for {intent}"}]
-    
-    return result
+         try:
+            if intent == "calories" and mongo_calories:
+                q = mongo_calories.build_query(item, user_id)
+                rows = mongo_calories.execute_query(q)
+                result["data"] = rows
+                return result
+
+            if intent == "workout" and mongo_workout:
+                q = mongo_workout.build_workout_query(item, user_id)
+                rows = mongo_workout.execute_workout_query(q)
+                result["data"] = rows
+                return result
+
+            if intent == "weekly_progress" and mongo_weekly:
+                q = mongo_weekly.build_query(item, user_id)
+                rows = mongo_weekly.execute_query(q)
+                result["data"] = rows
+                return result
+            if intent == "macros" and mongo_macros:
+                q = mongo_macros.build_macros_query(item, user_id)
+                rows = mongo_macros.execute_macros_query(q)
+                result["data"] = rows
+                return result
+
+            if mongo_calories:
+                q = mongo_calories.build_query(item, user_id)
+                rows = mongo_calories.execute_query(q)
+                result["data"] = rows
+                result["summary"] = None
+                return result
+
+            result["data"] = []
+            return result
+
+        except Exception as e:
+            result["error"] = str(e)
+            return result
+
+    else:
+        try:
+            if intent in ("daily_progress","progress") and sql_progress:
+                sql = sql_progress.generate_sql(text, user_id)
+                df = sql_progress.execute_sql_on_duckdb(sql)
+                result["data"] = json.loads(df.to_json(orient="records", date_format="iso"))
+                result["summary"] = None
+                return result
+
+            if intent == "calories" and sql_runner:
+                sql = sql_runner.generate_sql(text, user_id)
+                df = sql_runner.execute_sql_on_duckdb(sql)
+                result["data"] = json.loads(df.to_json(orient="records", date_format="iso"))
+                return result
+
+            if intent == "workout" and sql_runner:
+                sql = sql_runner.generate_sql(text, user_id)
+                df = sql_runner.execute_sql_on_duckdb(sql)
+                result["data"] = json.loads(df.to_json(orient="records", date_format="iso"))
+                return result
+
+            result["data"] = []
+            return result
+
+        except Exception as e:
+            result["error"] = str(e)
+            return result
 
 
 FINAL_PROMPT_TEMPLATE = """
