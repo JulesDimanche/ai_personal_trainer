@@ -3,26 +3,16 @@ import json
 import re
 from datetime import datetime
 from typing import List, Dict, Any
+from Fitness_kb.fitness_coach import run_coach_reasoning_engine
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from google.genai.types import Type
 from google import genai
 from google.genai.errors import APIError
 from dotenv import load_dotenv
 
-# --- Mock Imports for Context ---
-# Assuming these modules exist and have been imported in the original code
-# from Fitness_kb.fitness_coach import run_coach_reasoning_engine
-# import query.calories_query as mongo_calories
-# import sql_query.text_to_sql_runner as sql_runner
-def run_coach_reasoning_engine(query, data):
-    # Placeholder for the actual reasoning engine call
-    return f"REASONING_ENGINE_OUTPUT_FOR: {query}"
-# --------------------------------
-
 load_dotenv()
 
 # --- Gemini API Setup ---
-# Initialize the Gemini client. It will automatically use the GEMINI_API_KEY environment variable.
 try:
     client_gemini = genai.Client()
 except Exception as e:
@@ -135,7 +125,6 @@ def split_into_subqueries(user_question: str) -> List[Dict[str, Any]]:
 
 
 def choose_backend_for_subquery(intent: str, start_date: str, end_date: str) -> str:
-    # ... (Keep the original logic)
     intent = (intent or "").lower()
     days = 0
     if start_date and end_date:
