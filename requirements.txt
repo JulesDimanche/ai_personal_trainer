@@ -1,4 +1,4 @@
-faiss
+faiss-cpu
 dotenv
 pymongo
 google-genai
@@ -9,3 +9,4 @@ transformers
 accelerate
 torch
 fastapi
+sentence_transformers
