@@ -300,6 +300,36 @@ def synthesize_final_answer(user_question: str, collected: Dict[str, Any]) -> st
         max_tokens=800
     )
     return resp.choices[0].message.content.strip()
+def temp_final_answer(collected: Dict[str, Any]) -> str:
+    context = json.dumps(collected, indent=2, default=str)
+
+    messages = [
+        {
+            "role": "system",
+            "content": (
+                "You are a helpful assistant. "
+                "Your job is to read the provided data and explain it to the user "
+                "in clear, human-friendly language. "
+                "Never return JSON. Only return plain English text."
+            )
+        },
+        {
+            "role": "user",
+            "content": f"Here is the user's data:\n\n{context}\n\n"
+                       f"Now give the answer in simple English, no JSON, no objects."
+        }
+    ]
+
+    resp = client_deepseek.chat.completions.create(
+        model=MODEL_NAME,
+        messages=messages,
+        temperature=0.3,
+        max_tokens=700,
+        extra_headers=EXTRA_HEADERS
+    )
+
+    return resp.choices[0].message.content.strip()
+
 
 def answer_user_query(user_question: str, user_id: str) -> Dict[str, Any]:
     subqueries = split_into_subqueries(user_question)
@@ -342,12 +372,14 @@ def answer_user_query(user_question: str, user_id: str) -> Dict[str, Any]:
     #print("Collected subquery results:", collected)
     final_answer = synthesize_final_answer(main_user_query, collected) if main_user_query else ""
     resoning_answer=run_coach_reasoning_engine(reason_user_query, collected) if reason_user_query else ""
-    return {"answer": final_answer+resoning_answer}
+    temp_ans=temp_final_answer(collected)if (final_answer=="" and reason_user_query=="") else ""
+    #print("Final Answer:", final_answer, "\nReasoning Answer:", resoning_answer, "\nTemp Answer:", temp_ans)
+    return {"answer": final_answer+resoning_answer+temp_ans}
 
-if __name__ == "__main__":
-    user_id = "u001"
-    q = "Why my chest is not growing."
-    out = answer_user_query(q, user_id)
+#if __name__ == "__main__":
+    #user_id = "b441ef92-d75b-492e-be51-c2c8b46f4048"
+    #q = "What food i ate yesterday."
+    #out = answer_user_query(q, user_id)
     #print("the query is :",out)
-    print("FINAL ANSWER:\n", out["answer"])
+    #print("FINAL ANSWER:\n", out["answer"])
     #print("\nDETAILS:\n", json.dumps(out["details"], indent=2, default=str))
