@@ -5,19 +5,10 @@ from datetime import datetime
 from typing import List, Dict, Any
 from Fitness_kb.fitness_coach import run_coach_reasoning_engine
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from openai import OpenAI
+from google.genai.types import Type
+from google import genai
+from google.genai.errors import APIError
 from dotenv import load_dotenv
-load_dotenv()
-
-client_deepseek = OpenAI(
-    api_key=os.environ.get("DEEPSEEK_API_KEY"),
-    base_url="https://openrouter.ai/api/v1"
-)
-MODEL_NAME = "x-ai/grok-4.1-fast"
-EXTRA_HEADERS = {
-    "HTTP-Referer": os.environ.get("SITE_URL", "http://localhost"),
-    "X-Title": os.environ.get("SITE_NAME", "Query Orchestrator")
-}
 
 try:
     import query.calories_query as mongo_calories
@@ -42,13 +33,26 @@ try:
     import sql_query.text_to_sql_runner as sql_runner
 except Exception:
     sql_runner = None
-
 try:
     import sql_query.text_to_sql_prog as sql_progress
 except Exception:
     sql_progress = None
 
+load_dotenv()
 
+# --- Gemini API Setup ---
+try:
+    client_gemini = genai.Client()
+except Exception as e:
+    print(f"Error initializing Gemini client: {e}")
+    client_gemini = None
+    
+# Use a high-quality model for complex JSON generation
+SPLIT_MODEL_NAME = "gemini-2.5-flash" 
+FINAL_MODEL_NAME = "gemini-2.5-flash" 
+# ------------------------
+
+# The original helper function (kept for completeness)
 def days_between(start_iso: str, end_iso: str) -> int:
     try:
         s = datetime.fromisoformat(start_iso).date()
@@ -57,121 +61,102 @@ def days_between(start_iso: str, end_iso: str) -> int:
     except Exception:
         return 0
 
-SPLIT_PROMPT = """
-You are an assistant that breaks a user's natural-language fitness question into a list of precise sub-queries.
-Today's date is {today_date}.
+# -----------------------------------------------------
+## 🧠 Optimized SPLIT_PROMPT for Token Efficiency
+# The rules are now provided in the system instruction and the user prompt, but in a much tighter format.
+# We focus on the *output structure* and *intent logic* to guide the model.
+# -----------------------------------------------------
+SYSTEM_PROMPT = """
+You are an expert assistant that breaks a user's natural-language fitness question into a JSON list of precise sub-queries.
+Adhere strictly to the JSON schema and rules. Today's date is {today_date}.
 
-Each subquery must be a JSON object with keys:
-  - intent: one of ["calories", "workout", "daily_progress", "weekly_progress", "macros", "other", "reasoning"]
-  - subquery: short actionable text to send to the backend module
-  - start_date: ISO format YYYY-MM-DD or null
-  - end_date: ISO format YYYY-MM-DD or null
-
-================ RULES ================
-
-1. **INTENT: reasoning**
-   Use this when the user asks *why*, *explain*, *reason*, *what caused*, *why not improving*, 
-   or any deep analysis question that requires reasoning beyond data lookup.
-   - reasoning intent DOES NOT fetch data.
-   - reasoning intent is sent to a separate reasoning module.
-   - reasoning intent must appear **after** the data-fetch intents.
-
-   Example:
-     User: "why my bench press strength is not improving?"
-     Output:
-       - workout → fetch relevant exercises data
-       - reasoning → "explain why bench press strength not improving"
-
-2. **INTENT: other**
-   Use this when the user is asking for:
-   - general answering
-   - comparisons
-   - insights
-   - summary
-   - general explanation that does NOT require deep reasoning.
-
-   Example:
-     User: "compare my weekly macros"
-       - macros  → fetch data
-       - other   → final answering
-
-3. **Data intents**
-   (calories, workout, daily_progress, weekly_progress, macros)
-   Trigger these only when needed to fetch actual data.
-
-4. **Date handling rules**
-   - If user gives explicit dates → convert them to ISO
-   - If user gives ranges → produce period queries
-   - If reasoning or other intent → dates should be null unless user explicitly mentions them
-
-5. **Order of generated subqueries**
-   - Always list data-fetch intents first
-   - reasoning or other intents must always be last
-
-6. **Comparison logic**
-   - For comparing discrete dates → one subquery per date
-   - For continuous ranges → one subquery covering full range
-   - reasoning → always null dates
-   - other → null dates unless range comparison
-
-7. **Keep subquery short and actionable**
-   Example: 
-     "show weekly macros from 2025-01-10 to 2025-01-17"
-     "explain why bench strength not improving"
-8. For any "why", "reason", "explain", or stagnation-related questions 
-   (e.g., "why my muscle not growing", "why strength not improving"):
-   - Automatically include ALL relevant data intents required for analysis:
-       • workout (always)
-       • calories (always)
-       • macros (if related to muscle, strength, weight, or nutrition)
-       • progress data if the question mentions growth, improvement, regression
-   - The reasoning intent must ALWAYS come last.
-   - Dates must be null unless the user specifies time periods.
-
-----------------------------------------
-
-User question: "{user_question}"
+--- RULES ---
+2. **Intent Types**: "calories", "workout", "daily_progress", "weekly_progress", "macros", "other", "reasoning".
+3. **Data Fetching Order**: Data intents MUST come first ("calories", "workout", etc.).
+4. **Final Intents**: "reasoning" (for 'why', 'explain', 'stagnation') or "other" (for general summary/comparison) MUST come last.
+5. **Reasoning Intent Logic**: For any 'why', 'explain', or stagnation question (e.g., 'why not growing'), automatically include all required data intents first: 'workout' (always), 'calories' (always), 'macros' (if related to weight/muscle), and then 'reasoning' as the final step.
+6. **Date Logic**: Convert explicit dates to ISO format. Dates are `null` for "other" or "reasoning" unless the user specifies a range for the analysis.
+7. **Subquery Text**: Keep it short and actionable.
 """
 
-
-
-
 def split_into_subqueries(user_question: str) -> List[Dict[str, Any]]:
-    today_str=datetime.now().date().isoformat()
-    prompt = SPLIT_PROMPT.format(user_question=user_question,today_date=today_str)
+    if not client_gemini:
+        return [{"intent": "other", "subquery": user_question, "start_date": None, "end_date": None}]
+
+    today_str = datetime.now().date().isoformat()
+    
+    # User message will be the question + the schema definition for clarity
+    user_prompt = f"""
+    User question: "{user_question}"
+    
+    Generate the JSON list of subqueries based on the rules. Ensure the output is ONLY the JSON array.
+    """
     try:
-        resp = client_deepseek.chat.completions.create(
-            model=MODEL_NAME,
-            messages=[
-                {"role":"system","content":"You split user fitness questions into intent-level sub-queries."},
-                {"role":"user","content":prompt}
+        response = client_gemini.models.generate_content(
+            model=SPLIT_MODEL_NAME,
+            contents=[
+                {"role": "user", "parts": [{"text": user_prompt}]}
             ],
-            temperature=0.0,
-            extra_headers=EXTRA_HEADERS,
-            max_tokens=600
+            config=genai.types.GenerateContentConfig(
+                system_instruction=SYSTEM_PROMPT.format(today_date=today_str),
+                temperature=0.0,
+                # Removed response_mime_type to rely on schema
+                response_schema={"type": Type.ARRAY, "items": {"type": Type.OBJECT, "properties": {
+                    "intent": {"type": Type.STRING},
+                    "subquery": {"type": Type.STRING},
+                    
+                    # --- FIX IS HERE ---
+                    "start_date": {"type": Type.STRING, "nullable": True}, 
+                    "end_date": {"type": Type.STRING, "nullable": True}
+                    # --- END FIX ---
+                    
+                }}}
+            )
         )
-        raw = resp.choices[0].message.content.strip()
-        m = re.search(r'(\[.*\])', raw, re.S)
-        if not m:
-            data = json.loads(raw)
+        
+        raw = response.text.strip()
+        
+        # --- NEW DEBUG LINE ---
+        print(f"\n--- RAW API OUTPUT START ---\n{raw}\n--- RAW API OUTPUT END ---\n")
+        # ----------------------
+        
+        # 1. Search for a JSON array (starting with '[') in the output.
+        m = re.search(r'(\[.*\])', raw, re.DOTALL | re.IGNORECASE)
+        if m:
+            json_str = m.group(1).strip()
         else:
-            data = json.loads(m.group(1))
+            # If no array is explicitly found, strip common markdown wrappers as a fallback
+            json_str = re.sub(r'```json|```', '', raw.strip(), flags=re.IGNORECASE).strip()
+
+        # 2. Aggressively strip leading/trailing quotes (The most common error fix)
+        json_str = json_str.strip()
+        if json_str.startswith('"') and json_str.endswith('"'):
+            json_str = json_str[1:-1].strip()
+        
+        # 3. Re-strip any markdown/wrappers revealed by stripping quotes
+        json_str = re.sub(r'```json|```', '', json_str.strip(), flags=re.IGNORECASE).strip()
+
+        # 4. Attempt to parse the cleaned string
+        data = json.loads(json_str)
+
         return data if isinstance(data, list) else []
-    except Exception as e:
-        return [{"intent":"other", "subquery": user_question, "start_date": None, "end_date": None}]
+        
+    except (APIError, json.JSONDecodeError, Exception) as e:
+        # Before failing, let's print the problematic string for debugging
+        # The raw output is already printed, but this will print the string *after* cleaning
+        if 'json_str' in locals():
+            print(f"Failed to parse cleaned string (start): '{json_str[:100]}...'")
+        
+        # If parsing fails here, return a single 'other' intent to avoid a complete crash
+        print(f"Error splitting query: {e}")
+        return [{"intent": "other", "subquery": user_question, "start_date": None, "end_date": None}]
+
 
 def choose_backend_for_subquery(intent: str, start_date: str, end_date: str) -> str:
-
     intent = (intent or "").lower()
-
     days = 0
     if start_date and end_date:
-        try:
-            s = datetime.fromisoformat(start_date).date()
-            e = datetime.fromisoformat(end_date).date()
-            days = abs((e - s).days)
-        except Exception:
-            days = 0
+        days = days_between(start_date, end_date)
 
     if intent in ("daily_progress", "progress"):
         return "duckdb"
@@ -193,7 +178,6 @@ def choose_backend_for_subquery(intent: str, start_date: str, end_date: str) -> 
 
     return "mongo"
 
-
 def run_subquery_item(item: Dict[str, Any], user_id: str) -> Dict[str, Any]:
     intent = (item.get("intent") or "other").lower()
     text = item.get("subquery") or item.get("query") or ""
@@ -202,9 +186,10 @@ def run_subquery_item(item: Dict[str, Any], user_id: str) -> Dict[str, Any]:
 
     backend = choose_backend_for_subquery(intent, start_date, end_date)
 
-    result = {"intent": intent, "backend": backend, "query_text": text, "data": None, "summary": None}
+    result = {"intent": intent, "backend": backend, "query_text": text, "data": [], "summary": None}
+    
     if backend == "mongo":
-        try:
+         try:
             if intent == "calories" and mongo_calories:
                 q = mongo_calories.build_query(item, user_id)
                 rows = mongo_calories.execute_query(q)
@@ -270,11 +255,12 @@ def run_subquery_item(item: Dict[str, Any], user_id: str) -> Dict[str, Any]:
             result["error"] = str(e)
             return result
 
+
 FINAL_PROMPT_TEMPLATE = """
 You are an expert personal trainer and data-informed coach.
 The user asked: "{user_question}"
 
-You have the following retrieved data (as JSON) from multiple backends (MongoDB/DuckDB). Use these to answer the user's question as a single, concise and actionable personal trainer response. Mention insights, comparisons, and one or two actionable recommendations.
+You have the following retrieved data (as JSON) from multiple backends. Use these to answer the user's question as a single, concise and actionable personal trainer response. Mention insights, comparisons, and one or two actionable recommendations.
 
 Data:
 {collected_json}
@@ -287,18 +273,61 @@ Rules:
 """
 
 def synthesize_final_answer(user_question: str, collected: Dict[str, Any]) -> str:
+    if not client_gemini:
+        return "Error: Gemini client not initialized."
+
     ctx = json.dumps(collected, default=str, indent=2)
     prompt = FINAL_PROMPT_TEMPLATE.format(user_question=user_question, collected_json=ctx)
+    
+    # Define the core system instruction text
+    system_instr = "You are a helpful personal-trainer assistant who uses data to advise users. Be concise (4-8 short paragraphs)."
+
+    try:
+        response = client_gemini.models.generate_content(
+            model=FINAL_MODEL_NAME,
+            contents=[
+                # The contents list now only contains the user message, making it the first message
+                {"role": "user", "parts": [{"text": prompt}]}
+            ],
+            config=genai.types.GenerateContentConfig(
+                # The system instruction is provided via the configuration object
+                system_instruction=system_instr,
+                temperature=0.2,
+                max_output_tokens=800
+            )
+        )
+        return response.text.strip()
+    except APIError as e:
+        return f"Error synthesizing final answer: {e}"
+
+def temp_final_answer(collected: Dict[str, Any]) -> str:
+    context = json.dumps(collected, indent=2, default=str)
+
+    messages = [
+        {
+            "role": "system",
+            "content": (
+                "You are a helpful assistant. "
+                "Your job is to read the provided data and explain it to the user "
+                "in clear, human-friendly language. "
+                "Never return JSON. Only return plain English text."
+            )
+        },
+        {
+            "role": "user",
+            "content": f"Here is the user's data:\n\n{context}\n\n"
+                       f"Now give the answer in simple English, no JSON, no objects."
+        }
+    ]
+
     resp = client_deepseek.chat.completions.create(
         model=MODEL_NAME,
-        messages=[
-            {"role":"system","content":"You are a helpful personal-trainer assistant who uses data to advise users."},
-            {"role":"user","content":prompt}
-        ],
-        temperature=0.2,
-        extra_headers=EXTRA_HEADERS,
-        max_tokens=800
+        messages=messages,
+        temperature=0.3,
+        max_tokens=700,
+        extra_headers=EXTRA_HEADERS
     )
+
     return resp.choices[0].message.content.strip()
 def temp_final_answer(collected: Dict[str, Any]) -> str:
     context = json.dumps(collected, indent=2, default=str)
@@ -329,6 +358,7 @@ def temp_final_answer(collected: Dict[str, Any]) -> str:
     )
 
     return resp.choices[0].message.content.strip()
+
 
 
 def answer_user_query(user_question: str, user_id: str) -> Dict[str, Any]:
