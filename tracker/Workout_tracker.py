@@ -38,7 +38,7 @@ Example output:
       "muscle_group": "chest",
       "sets": 3,
       "reps": [10, 8, 6],
-      "weight": 60,
+      "weight": [60,60,60]
       "duration_minutes": null,
       "calories_burned": 50
     },

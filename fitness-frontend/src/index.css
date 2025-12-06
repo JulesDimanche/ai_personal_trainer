@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* GLOBAL THEME */
+body {
+  @apply bg-neutral-950 text-white antialiased;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* OPTIONAL: Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background: #3a3a3a;
+  border-radius: 6px;
+}

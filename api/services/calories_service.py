@@ -54,9 +54,10 @@ def calculate_calories(calories_payload: Dict[str, Any]) -> Dict[str, Any]:
         )
     text=calories_payload["text"]
     user_id=calories_payload["user_id"]
+    date=calories_payload.get("date")
     calorie_data = estimate_calories(text)
     try:
-        today_str = datetime.datetime.utcnow().strftime("%Y-%m-%d")
+        today_str = date
         #today_str="2025-11-24"
         incoming_meals = calorie_data.get("meals", [])
         if not incoming_meals:
@@ -169,6 +170,94 @@ def calculate_calories(calories_payload: Dict[str, Any]) -> Dict[str, Any]:
     except Exception as e:
         print(f"❌ Error inserting/updating calorie plan: {e}")
         return None
+def view_calories(user_id: str, date: str) -> Dict[str, Any]:
+    if not user_id:
+        raise ValueError("user_id is required")
+    if not date:
+        raise ValueError("date is required")
+    if calories_col is None:
+        raise RuntimeError(
+            "No MongoDB collection available as 'calories_col'.\n"
+            "Provide one of the following in your environment:\n"
+            " - a module `db_connection` exposing `db` (pymongo.Database),\n"
+            " - a module `db` exposing a `db` (pymongo.Database),\n"
+            " - set MONGO_URI environment variable so the service can connect directly.\n"
+            "Or adapt `api/services/calories_service.py` to your project's DB loader."
+        )
+    try:
+        doc = calories_col.find_one({"user_id": user_id, "date": date})
+        if not doc:
+            return { "success": True,"calorie_data": { "plan_data": [], "summary": {} } }
 
+        return {
+            "plan_data": doc.get("plan_data", []),
+            "summary": doc.get("summary", {})
+        }
+    except Exception as e:
+        print(f"❌ Error retrieving calorie data: {e}")
+        raise RuntimeError(f"Error retrieving calorie data: {e}")
+def delete_food(data):
+    doc = calories_col.find_one({"user_id": data.user_id, "date": data.date})
+    if not doc:
+        return {"status": "error", "message": "Food log not found"}
 
-    
+    plan_data = doc.get("plan_data", [])
+
+    # Find the correct meal
+    meal = None
+    for m in plan_data:
+        if m["meal_type"].lower() == data.meal_type.lower():
+            meal = m
+            break
+
+    if not meal:
+        return {"status": "error", "message": "Meal type not found"}
+
+    items = meal.get("items", [])
+
+    # Find the food item
+    new_items = [i for i in items if i["food"].lower() != data.food_name.lower()]
+
+    if len(new_items) == len(items):
+        return {"status": "error", "message": "Food item not found"}
+
+    # Update items
+    meal["items"] = new_items
+
+    # Recalculate meal summary
+    meal["meal_summary"] = {
+        "total_calories": sum(i["calories"] for i in new_items),
+        "total_protein": sum(i["proteins"] for i in new_items),
+        "total_fat": sum(i["fats"] for i in new_items),
+        "total_carb": sum(i["carbs"] for i in new_items),
+        "total_fiber": sum(i["fiber"] for i in new_items),
+    }
+
+    # Recalculate full-day summary
+    full_day = {
+        "total_calories": 0,
+        "total_protein": 0,
+        "total_fat": 0,
+        "total_carb": 0,
+        "total_fiber": 0,
+    }
+
+    for m in plan_data:
+        full_day["total_calories"] += m["meal_summary"]["total_calories"]
+        full_day["total_protein"] += m["meal_summary"]["total_protein"]
+        full_day["total_fat"] += m["meal_summary"]["total_fat"]
+        full_day["total_carb"] += m["meal_summary"]["total_carb"]
+        full_day["total_fiber"] += m["meal_summary"]["total_fiber"]
+
+    doc["summary"] = full_day
+
+    # Save to DB
+    calories_col.update_one(
+        {"user_id": data.user_id, "date": data.date},
+        {"$set": {"plan_data": plan_data, "summary": full_day}}
+    )
+    latest_doc = calories_col.find_one({"user_id": data.user_id, "date": data.date})
+    latest_summary = latest_doc.get("summary", {}) if latest_doc else {}
+    handle_summary_trigger(data.user_id, latest_summary, data.date)
+    update_daily_progress(data.user_id, data.date)
+    return {"status": "success", "message": "Food deleted"}

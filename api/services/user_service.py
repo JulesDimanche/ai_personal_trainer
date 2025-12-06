@@ -25,6 +25,7 @@ if user_col is None:
         user_col = None
 
 def generate_user_data(user_payload: Dict[str, Any]) -> Dict[str, Any]:
+    user_payload=dict(user_payload)
 
     if "user_id" not in user_payload:
         raise ValueError("user_payload must include 'user_id'")
@@ -45,3 +46,21 @@ def generate_user_data(user_payload: Dict[str, Any]) -> Dict[str, Any]:
 
     stored_doc = user_col.find_one(filter_q, {"_id": 0})
     return stored_doc or user_payload
+def view_user(user_id: str) -> Dict[str, Any]:
+    if user_col is None:
+        raise RuntimeError(
+            "No MongoDB collection available as 'user_col'.\n"
+            "Provide one of the following in your environment:\n"
+            " - a module `db_connection` exposing `db` (pymongo.Database),\n"
+            " - a module `db` exposing a `db` (pymongo.Database),\n"
+            " - set MONGO_URI environment variable so the service can connect directly.\n"
+            "Or adapt `api/services/macro_service.py` to your project's DB loader."
+        )
+
+    filter_q = {"user_id": user_id}
+
+    stored_doc = user_col.find_one(filter_q, {"_id": 0})
+    if not stored_doc:
+        raise ValueError(f"User with user_id {user_id} not found.")
+
+    return stored_doc

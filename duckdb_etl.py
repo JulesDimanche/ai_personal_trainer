@@ -7,7 +7,6 @@ from typing import List, Dict, Any
 import pandas as pd
 import duckdb
 
-# try to reuse your existing db_connection module (calories_query.py used this)
 try:
     import db_connection as dbc
     mongo_db = dbc.db
@@ -15,7 +14,6 @@ try:
     workout_col = getattr(dbc, "workout_col", mongo_db["workouts_logs"])
     progress_col = getattr(dbc, "progress_col", mongo_db["progress"])
 except Exception:
-    # fallback to environment variables if db_connection is not available
     from pymongo import MongoClient
     MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
     DB_NAME = os.getenv("DB_NAME", "test")
@@ -101,7 +99,6 @@ def init_schema():
     """
     )
 
-    # metadata table to store last_etl_run as ISO timestamp
     con.execute(
         f"""
         CREATE TABLE IF NOT EXISTS {ETL_METADATA_TABLE} (
@@ -110,7 +107,6 @@ def init_schema():
         );
         """
     )
-    # insert initial last_etl_run if not exists
     res = con.execute(f"SELECT value FROM {ETL_METADATA_TABLE} WHERE key='last_etl_run'").fetchall()
     if not res:
         con.execute(f"INSERT INTO {ETL_METADATA_TABLE} VALUES ('last_etl_run', NULL);")
@@ -145,17 +141,14 @@ def flatten_diet_doc(doc: Dict[str, Any]) -> List[Dict[str, Any]]:
     user_id = doc.get("user_id")
     date = doc.get("date")
 
-    # --- Timestamp normalization ---
     created_at = doc.get("created_at")
     updated_at = doc.get("updated_at")
 
-    # Convert BSON/Datetime objects to ISO string
     if isinstance(created_at, datetime):
         created_at = created_at.isoformat()
     if isinstance(updated_at, datetime):
         updated_at = updated_at.isoformat()
 
-    # Fallback logic
     if not created_at and not updated_at:
         created_at = updated_at = datetime.utcnow().isoformat()
     elif created_at and not updated_at:
@@ -163,7 +156,6 @@ def flatten_diet_doc(doc: Dict[str, Any]) -> List[Dict[str, Any]]:
     elif updated_at and not created_at:
         created_at = updated_at
 
-    # --- Flatten meals ---
     plan_data = doc.get("plan_data", []) or []
     for mi, meal in enumerate(plan_data):
         meal_type = meal.get("meal_type")
@@ -202,17 +194,14 @@ def flatten_workout_doc(doc: Dict[str, Any]) -> List[Dict[str, Any]]:
     user_id = doc.get("user_id")
     date = doc.get("date")
 
-    # --- Timestamp normalization ---
     created_at = doc.get("created_at")
     updated_at = doc.get("updated_at")
 
-    # Convert BSON/Datetime objects to ISO string
     if isinstance(created_at, datetime):
         created_at = created_at.isoformat()
     if isinstance(updated_at, datetime):
         updated_at = updated_at.isoformat()
 
-    # Fallback logic
     if not created_at and not updated_at:
         created_at = updated_at = datetime.utcnow().isoformat()
     elif created_at and not updated_at:
@@ -220,7 +209,6 @@ def flatten_workout_doc(doc: Dict[str, Any]) -> List[Dict[str, Any]]:
     elif updated_at and not created_at:
         created_at = updated_at
 
-    # --- Flatten workout data ---
     workout_data = doc.get("workout_data", []) or []
     for wi, ex in enumerate(workout_data):
         source_row_id = f"{_id}::exercise::{wi}"
@@ -278,10 +266,8 @@ def etl_incremental():
     - Works correctly even if ETL runs multiple times per day.
     """
     init_schema()
-    # Load last ETL timestamp
     last_run = get_last_etl_run()
 
-# If first run → full load
     if last_run is None:
         print("First ETL run: performing full sync")
         diet_docs = list(diet_col.find())
@@ -290,25 +276,21 @@ def etl_incremental():
     else:
         print(f"Incremental ETL from {last_run}")
 
-        # Diet → use summary.created_at
         diet_docs = list(
             diet_col.find({
                 "summary.created_at": {"$gte": last_run.isoformat()}
             })
         )
 
-        # Workout → use root created_at
         workout_docs = list(
             workout_col.find({
                 "created_at": {"$gte": last_run}
             })
         )
 
-        # Progress → full sync
         progress_docs = list(progress_col.find())
 
 
-    # Flatten documents
     diet_rows, diet_ids_to_delete = [], []
     for d in diet_docs:
         rows = flatten_diet_doc(d)
@@ -327,7 +309,6 @@ def etl_incremental():
         progress_rows.append(row)
         progress_ids_to_delete.append(row["source_doc_id"])
 
-    # Delete and insert new rows
     if diet_ids_to_delete:
         con.execute("DELETE FROM foods WHERE source_row_id IN (" + ",".join(["?"] * len(diet_ids_to_delete)) + ")", diet_ids_to_delete)
     if wo_ids_to_delete:
@@ -355,12 +336,10 @@ def etl_incremental():
         con.execute("INSERT INTO daily_progress SELECT * FROM tmp_progress_df")
         con.unregister("tmp_progress_df")
 
-    # ✅ Save the actual current time as the ETL checkpoint
     set_last_etl_run(datetime.utcnow())
 
     print(f"ETL complete. diet_docs={len(diet_docs)} workout_docs={len(workout_docs)} progress_docs={len(progress_docs)}. Time={datetime.utcnow().isoformat()}")
 
 
 if __name__ == "__main__":
-    # run the ETL now
     etl_incremental()
