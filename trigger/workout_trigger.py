@@ -6,7 +6,7 @@ def handle_wo_summary_trigger(user_id, summary_text, timestamp):
         #date_str = timestamp.strftime("%Y-%m-%d")
         query = {"user_id": user_id, "date": date_str}
 
-        new_summary = summary_text.get("daily_summary", summary_text)
+        new_summary = summary_text
 
         update = {
             "$set": {

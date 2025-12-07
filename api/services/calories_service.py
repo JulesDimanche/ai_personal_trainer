@@ -58,7 +58,6 @@ def calculate_calories(calories_payload: Dict[str, Any]) -> Dict[str, Any]:
     calorie_data = estimate_calories(text)
     try:
         today_str = date
-        #today_str="2025-11-24"
         incoming_meals = calorie_data.get("meals", [])
         if not incoming_meals:
             print("⚠️ No meals provided.")
@@ -203,7 +202,6 @@ def delete_food(data):
 
     plan_data = doc.get("plan_data", [])
 
-    # Find the correct meal
     meal = None
     for m in plan_data:
         if m["meal_type"].lower() == data.meal_type.lower():
@@ -215,16 +213,13 @@ def delete_food(data):
 
     items = meal.get("items", [])
 
-    # Find the food item
     new_items = [i for i in items if i["food"].lower() != data.food_name.lower()]
 
     if len(new_items) == len(items):
         return {"status": "error", "message": "Food item not found"}
 
-    # Update items
     meal["items"] = new_items
 
-    # Recalculate meal summary
     meal["meal_summary"] = {
         "total_calories": sum(i["calories"] for i in new_items),
         "total_protein": sum(i["proteins"] for i in new_items),
@@ -233,7 +228,6 @@ def delete_food(data):
         "total_fiber": sum(i["fiber"] for i in new_items),
     }
 
-    # Recalculate full-day summary
     full_day = {
         "total_calories": 0,
         "total_protein": 0,
@@ -251,7 +245,6 @@ def delete_food(data):
 
     doc["summary"] = full_day
 
-    # Save to DB
     calories_col.update_one(
         {"user_id": data.user_id, "date": data.date},
         {"$set": {"plan_data": plan_data, "summary": full_day}}

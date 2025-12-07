@@ -11,6 +11,7 @@ import {
 } from "@/lib/api";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import NavBar from "@/components/NavBar";
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState("personal");
@@ -105,6 +106,7 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white relative overflow-hidden">
+      <NavBar />
       <div className="absolute inset-0 bg-gradient-to-br from-blue-900/30 via-neutral-900 to-purple-900/20 pointer-events-none" />
       <div className="absolute -left-14 -top-10 w-44 h-44 bg-blue-600/20 blur-3xl rounded-full" />
       <div className="absolute -right-16 bottom-0 w-60 h-60 bg-purple-600/10 blur-3xl rounded-full" />

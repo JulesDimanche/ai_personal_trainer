@@ -8,6 +8,7 @@ import dayjs from "dayjs";
 import axios from "axios";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import { fetchUserMacros } from "@/lib/api";
+import NavBar from "@/components/NavBar";
 
 export default function Food() {
   const [date, setDate] = useState(dayjs().format("YYYY-MM-DD"));
@@ -180,7 +181,9 @@ export default function Food() {
   };
 
   return (
-    <div className="flex flex-col h-screen p-4 gap-4 bg-neutral-950 text-white">
+    <div className="min-h-screen bg-neutral-950 text-white">
+      <NavBar />
+      <div className="flex flex-col h-[calc(100vh-4rem)] p-4 gap-4">
       {/* Date Picker */}
       <div className="w-full flex justify-center mt-2">
         <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
@@ -375,6 +378,7 @@ export default function Food() {
           >
             Add
           </button></>
+      </div>
       </div>
     </div>
   );

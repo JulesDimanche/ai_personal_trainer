@@ -27,7 +27,7 @@ For each exercise in "detailed_exercises", include:
 - sets
 - reps (can be a number or a list if reps vary per set)
 - weight (if mentioned, else null)
-- duration_minutes (if it’s a cardio activity like running, cycling, etc.)
+- duration_minutes (if mentioned, else estimate it)
 - calories_burned (approximate, based on intensity if not given)
 
 Example output:
@@ -39,7 +39,7 @@ Example output:
       "sets": 3,
       "reps": [10, 8, 6],
       "weight": [60,60,60]
-      "duration_minutes": null,
+      "duration_minutes": 15,
       "calories_burned": 50
     },
     {

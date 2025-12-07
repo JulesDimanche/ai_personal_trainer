@@ -111,7 +111,18 @@ def calculate_workout(workout_payload: Dict[str, Any]) -> Dict[str, Any]:
                 name = ex.get("exercise_name", "").lower()
                 if not name:
                     continue
+                reps = ex.get("reps")
+                if isinstance(reps, (int, float)):
+                    ex["reps"] = [reps]
+                elif reps is None:
+                    ex["reps"] = []
 
+                # --- Normalize weight to always be a list ---
+                weight = ex.get("weight")
+                if isinstance(weight, (int, float)):
+                    ex["weight"] = [weight]
+                elif weight is None:
+                    ex["weight"] = []
                 if name in idx_map:
                     existing_ex = existing_data[idx_map[name]]
 
@@ -129,10 +140,21 @@ def calculate_workout(workout_payload: Dict[str, Any]) -> Dict[str, Any]:
                         else:
                             existing_ex["reps"] = [existing_ex.get("reps", 0), new_reps]
 
-                    if ex.get("weight"):
-                        existing_ex["weight"] = round(
-                            (existing_ex.get("weight", 0) + ex["weight"]) / 2, 2
-                        )
+                    new_weight = ex.get("weight")
+
+                    # Ensure existing weight is a list
+                    if "weight" not in existing_ex:
+                        existing_ex["weight"] = []
+
+                    elif isinstance(existing_ex["weight"], (int, float)):
+                        existing_ex["weight"] = [existing_ex["weight"]]
+
+                    # Append the new weight correctly
+                    if new_weight is not None:
+                        if isinstance(new_weight, list):
+                            existing_ex["weight"].extend(new_weight)
+                        else:
+                            existing_ex["weight"].append(new_weight)
 
                     existing_ex["duration_minutes"] = round(
                         (existing_ex.get("duration_minutes", 0) or 0)
@@ -368,6 +390,8 @@ def save_plan_and_daily(user_id: str, date: str, plan_name: str, frontend_exerci
                 "name": ex.get("exercise_name") or ex.get("name"),
                 "muscle_group": ex.get("muscle_group"),
                 "sets": sets_list,
+                "duration_minutes": ex.get("duration_minutes", 0),
+                "calories_burned": ex.get("calories_burned", 0),
                 "updated_at": datetime.datetime.utcnow()
             })
 
@@ -471,10 +495,13 @@ def delete_set(data):
 
     workouts = doc.get("workout_data", [])
 
+
     # Find matching exercise
     for i, w in enumerate(workouts):
         if w["exercise_name"].lower() == data.exercise_name.lower():
-
+            old_sets = w["sets"] or 1
+            avg_duration = (w.get("duration_minutes", 0) or 0) / old_sets
+            avg_calories = (w.get("calories_burned", 0) or 0) / old_sets
             # Validate set index
             if data.set_index < 0 or data.set_index >= len(w["reps"]):
                 return {"status": "error", "message": "Invalid set index"}
@@ -489,18 +516,22 @@ def delete_set(data):
                 workouts.pop(i)
             else:
                 w["sets"] = len(w["reps"])
+            new_sets = w["sets"]
+            w["duration_minutes"] = round(avg_duration * new_sets, 2)
+            w["calories_burned"] = round(avg_calories * new_sets, 2)
 
+            summary = compute_workout_summary(workouts)
             # Save back
             workout_col.update_one(
                 {"user_id": data.user_id, "date": data.date},
-                {"$set": {"workout_data": workouts}}
+                {"$set": {"workout_data": workouts,"summary": summary}}
             )
 
+            latest_doc = workout_col.find_one({"user_id": data.user_id, "date": data.date})
+            latest_summary = latest_doc.get("summary", {}) if latest_doc else {}
+            handle_wo_summary_trigger(data.user_id, latest_summary,data.date)
+            update_daily_progress(data.user_id,data.date)
             return {"status": "success", "message": "Set deleted"}
-    latest_doc = workout_col.find_one({"user_id": data.user_id, "date": data.date})
-    latest_summary = latest_doc.get("summary", {}) if latest_doc else {}
-    handle_wo_summary_trigger(data.user_id, latest_summary,data.date)
-    update_daily_progress(data.user_id,data.date)
 
     return {"status": "error", "message": "Exercise not found"}
 
@@ -519,15 +550,20 @@ def edit_set(data):
 
     if not found:
         return {"status": "error", "message": "Exercise not found"}
-
-    # Replace the whole reps & weight arrays
+    old_sets = found["sets"] or 1
+    avg_duration = (found.get("duration_minutes", 0) or 0) / old_sets
+    avg_calories = (found.get("calories_burned", 0) or 0) / old_sets
     found["reps"] = data.reps
     found["weight"] = data.weight
     found["sets"] = len(data.reps)
+    new_sets = found["sets"]
+    found["duration_minutes"] = round(avg_duration * new_sets, 2)
+    found["calories_burned"] = round(avg_calories * new_sets, 2)
 
+    summary = compute_workout_summary(workouts)
     workout_col.update_one(
         {"user_id": data.user_id, "date": data.date},
-        {"$set": {"workout_data": workouts}}
+        {"$set": {"workout_data": workouts,"summary": summary}}
     )
     latest_doc = workout_col.find_one({"user_id": data.user_id, "date": data.date})
     latest_summary = latest_doc.get("summary", {}) if latest_doc else {}

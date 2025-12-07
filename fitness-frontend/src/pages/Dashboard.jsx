@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { fetchFoodSummary, fetchWorkoutSummary, fetchUserMacros } from "@/lib/api";
+import NavBar from "@/components/NavBar";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -66,7 +67,9 @@ export default function Dashboard() {
     );
 
   return (
-    <div className="p-6 space-y-6 max-w-3xl mx-auto">
+    <div className="min-h-screen bg-neutral-950">
+      <NavBar />
+      <div className="p-6 space-y-6 max-w-3xl mx-auto">
       {/* Greeting */}
       <h1 className="text-3xl font-bold tracking-tight mb-4">
         Welcome Back <span className="text-blue-400">👋</span>
@@ -137,10 +140,11 @@ export default function Dashboard() {
         <div className="grid grid-cols-2 gap-3">
           <Button className="rounded-xl bg-neutral-800 hover:bg-neutral-700" onClick={() => navigate("/food-entry")}>Add Food</Button>
           <Button className="rounded-xl bg-neutral-800 hover:bg-neutral-700" onClick={() => navigate("/workouts")}>Workout Plan</Button>
-          <Button className="rounded-xl bg-neutral-800 hover:bg-neutral-700" onClick={() => navigate("/macros")}>Macros</Button>
+          <Button className="rounded-xl bg-neutral-800 hover:bg-neutral-700" onClick={() => navigate("/planner")}>Macros</Button>
           <Button className="rounded-xl bg-neutral-800 hover:bg-neutral-700" onClick={() => navigate("/progress")}>Log Weight</Button>
         </div>
       </Card>
+      </div>
     </div>
   );
 }

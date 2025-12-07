@@ -9,8 +9,9 @@ sys.path.append('..')
 from api.routes.macros_route import router as macro_router
 from api.routes.calories_route import router as calories_router
 from api.routes.workout_route import router as workout_router
-#from api.routes.query_route import router as query_router
+from api.routes.query_route import router as query_router
 from api.routes.user_route import router as user_router
+from api.routes.weight_route import router as weight_router
 from db_connection import user_data
 from auth import hash_password, verify_password, create_access_token
 
@@ -72,5 +73,6 @@ def dashboard(user = Depends(get_current_user)):
 app.include_router(macro_router)
 app.include_router(calories_router)
 app.include_router(workout_router)
-#app.include_router(query_router)
+app.include_router(query_router)
 app.include_router(user_router)
+app.include_router(weight_router)

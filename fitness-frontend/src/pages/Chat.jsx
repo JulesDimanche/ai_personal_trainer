@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import NavBar from "@/components/NavBar";
 
 export default function Chat() {
   const [input, setInput] = useState("");
@@ -87,12 +88,14 @@ setMessages(prev => [...prev, { role: "assistant", text: answer }]);
   };
 
   return (
-    <div className="flex flex-col h-screen p-4 gap-4">
-      <div className="text-lg font-semibold">Chat Assistant</div>
+    <div className="min-h-screen bg-neutral-950 text-white">
+      <NavBar />
+      <div className="flex flex-col h-[calc(100vh-4rem)] p-4 gap-4">
+        <div className="text-lg font-semibold">Chat Assistant</div>
 
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto p-4 bg-white rounded shadow space-y-3"
+        className="flex-1 overflow-y-auto p-4 bg-neutral-900 rounded-xl border border-neutral-800 space-y-3"
       >
         {messages.length === 0 && (
           <div className="text-center text-gray-400">
@@ -105,8 +108,8 @@ setMessages(prev => [...prev, { role: "assistant", text: answer }]);
             key={index}
             className={`max-w-3xl px-4 py-3 rounded-lg ${
               msg.role === "user"
-                ? "bg-blue-500 text-white self-end"
-                : "bg-gray-200 text-black self-start"
+                ? "bg-blue-600 text-white self-end ml-auto"
+                : "bg-neutral-800 text-white self-start"
             }`}
           >
             <div className="whitespace-pre-wrap">{msg.text}</div>
@@ -115,17 +118,17 @@ setMessages(prev => [...prev, { role: "assistant", text: answer }]);
         ))}
 
         {loading && (
-          <div className="bg-gray-300 text-black rounded-lg px-4 py-2 w-fit">
+          <div className="bg-neutral-800 text-white rounded-lg px-4 py-2 w-fit">
             Thinking...
           </div>
         )}
       </div>
 
-      {error && <div className="text-red-600 text-sm">{error}</div>}
+      {error && <div className="text-red-400 text-sm">{error}</div>}
 
       <div className="flex gap-2">
         <textarea
-          className="flex-1 border rounded p-3 min-h-[48px] resize-none"
+          className="flex-1 bg-neutral-800 border border-neutral-700 rounded-xl p-3 min-h-[48px] resize-none text-white placeholder-neutral-500 focus:outline-none focus:border-blue-500"
           placeholder="Type your question..."
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -133,12 +136,13 @@ setMessages(prev => [...prev, { role: "assistant", text: answer }]);
         />
 
         <button
-          className="px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50"
+          className="px-4 py-2 bg-blue-600 text-white rounded-xl disabled:opacity-50 hover:bg-blue-700"
           disabled={loading}
           onClick={sendMessage}
         >
           {loading ? "Sending..." : "Send"}
         </button>
+      </div>
       </div>
     </div>
   );
