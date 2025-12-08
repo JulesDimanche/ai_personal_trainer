@@ -22,6 +22,24 @@ if workout_col is None:
             print("Using workout_col from direct MongoDB connection")
     except Exception:
         workout_col = None
+workout_plan_col = None
+try:
+    from db_connection import db as _db
+    workout_plan_col = _db['workout_plan']
+    print("Using workout_plan_col from db_connection module")
+except Exception:
+    workout_plan_col = None
+if workout_plan_col is None:
+    try:
+        from pymongo import MongoClient
+        MONGO_URI = os.getenv("MONGO_URI")
+        if MONGO_URI:
+            client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
+            db_from_uri = client.get_default_database() or client["mydb"]
+            workout_plan_col = db_from_uri["workout_plan"]
+            print("Using workout_plan_col from direct MongoDB connection")
+    except Exception:
+        workout_plan_col = None
 def compute_workout_summary(exercises):
     summary = {
         "total_exercises": len(exercises),
@@ -48,9 +66,9 @@ def compute_workout_summary(exercises):
 
     return summary
 
-def calculate_workout(calories_payload: Dict[str, Any]) -> Dict[str, Any]:
-    if "user_id" not in calories_payload:
-        raise ValueError("calories_payload must include 'user_id'")
+def calculate_workout(workout_payload: Dict[str, Any]) -> Dict[str, Any]:
+    if "user_id" not in workout_payload:
+        raise ValueError("workout_payload must include 'user_id'")
     if workout_col is None:
         raise RuntimeError(
             "No MongoDB collection available as 'workout_col'.\n"
@@ -60,11 +78,12 @@ def calculate_workout(calories_payload: Dict[str, Any]) -> Dict[str, Any]:
             " - set MONGO_URI environment variable so the service can connect directly.\n"
             "Or adapt `api/services/calories_service.py` to your project's DB loader."
         )
-    text=calories_payload["text"]
-    user_id=calories_payload["user_id"]
+    text=workout_payload["text"]
+    user_id=workout_payload["user_id"]
+    date=workout_payload["date"]
     workout_data = generate_workout_summary(text)
     try:
-        today_str = "2025-11-24"
+        today_str =date
         incoming_exercises = workout_data.get("detailed_exercises", [])
         if not incoming_exercises:
             print("⚠️ No exercises provided.")
@@ -92,7 +111,18 @@ def calculate_workout(calories_payload: Dict[str, Any]) -> Dict[str, Any]:
                 name = ex.get("exercise_name", "").lower()
                 if not name:
                     continue
+                reps = ex.get("reps")
+                if isinstance(reps, (int, float)):
+                    ex["reps"] = [reps]
+                elif reps is None:
+                    ex["reps"] = []
 
+                # --- Normalize weight to always be a list ---
+                weight = ex.get("weight")
+                if isinstance(weight, (int, float)):
+                    ex["weight"] = [weight]
+                elif weight is None:
+                    ex["weight"] = []
                 if name in idx_map:
                     existing_ex = existing_data[idx_map[name]]
 
@@ -110,10 +140,21 @@ def calculate_workout(calories_payload: Dict[str, Any]) -> Dict[str, Any]:
                         else:
                             existing_ex["reps"] = [existing_ex.get("reps", 0), new_reps]
 
-                    if ex.get("weight"):
-                        existing_ex["weight"] = round(
-                            (existing_ex.get("weight", 0) + ex["weight"]) / 2, 2
-                        )
+                    new_weight = ex.get("weight")
+
+                    # Ensure existing weight is a list
+                    if "weight" not in existing_ex:
+                        existing_ex["weight"] = []
+
+                    elif isinstance(existing_ex["weight"], (int, float)):
+                        existing_ex["weight"] = [existing_ex["weight"]]
+
+                    # Append the new weight correctly
+                    if new_weight is not None:
+                        if isinstance(new_weight, list):
+                            existing_ex["weight"].extend(new_weight)
+                        else:
+                            existing_ex["weight"].append(new_weight)
 
                     existing_ex["duration_minutes"] = round(
                         (existing_ex.get("duration_minutes", 0) or 0)
@@ -153,6 +194,379 @@ def calculate_workout(calories_payload: Dict[str, Any]) -> Dict[str, Any]:
     except Exception as e:
         print(f"❌ Error inserting/updating workout plan: {e}")
         return None
+def view_workout(user_id: str, date: str) -> Dict[str, Any]:
+    if not user_id:
+        raise ValueError("user_id is required")
+    if not date:
+        raise ValueError("date is required")
+    if workout_col is None:
+        raise RuntimeError(
+            "No MongoDB collection available as 'calories_col'.\n"
+            "Provide one of the following in your environment:\n"
+            " - a module `db_connection` exposing `db` (pymongo.Database),\n"
+            " - a module `db` exposing a `db` (pymongo.Database),\n"
+            " - set MONGO_URI environment variable so the service can connect directly.\n"
+            "Or adapt `api/services/calories_service.py` to your project's DB loader."
+        )
+    try:
+        doc = workout_col.find_one({"user_id": user_id, "date": date})
+        if not doc:
+            return { "success": True,"workout_data": { "plan_data": [], "summary": {} } }
 
+        return {
+            "workout_data": doc.get("workout_data", []),
+            "summary": doc.get("summary", {})
+        }
+    except Exception as e:
+        print(f"❌ Error retrieving calorie data: {e}")
+        raise RuntimeError(f"Error retrieving calorie data: {e}")
+def create_or_update_workout_plan(user_id: str, plan_name: str, exercise_name: str, sets_list: list):
+    if not user_id:
+        return {"error": "User ID is required."}
+    if not plan_name:
+        return {"error": "Plan name is required."}
+    if not exercise_name:
+        return {"error": "Exercise name is required."}
+    if workout_plan_col is None:
+        raise RuntimeError(
+            "No MongoDB collection available as 'calories_col'.\n"
+            "Provide one of the following in your environment:\n"
+            " - a module `db_connection` exposing `db` (pymongo.Database),\n"
+            " - a module `db` exposing a `db` (pymongo.Database),\n"
+            " - set MONGO_URI environment variable so the service can connect directly.\n"
+            "Or adapt `api/services/calories_service.py` to your project's DB loader."
+        )
 
+    plan_name = plan_name.strip().title()
+    exercise_name = exercise_name.strip().title()
+
+    user_data = workout_plan_col.find_one({"user_id": user_id})
+
+    exercise_obj = {
+        "name": exercise_name,
+        "sets": sets_list,
+        "updated_at": datetime.datetime.utcnow()
+    }
+
+    if not user_data:
+        new_doc = {
+            "user_id": user_id,
+            "plans": [
+                {
+                    "name": plan_name,
+                    "created_at":datetime.datetime.utcnow(),
+                    "updated_at": datetime.datetime.utcnow(),
+                    "exercises": [exercise_obj]
+                }
+            ],
+            "created_at": datetime.datetime.utcnow(),
+            "updated_at": datetime.datetime.utcnow()
+        }
+        workout_plan_col.insert_one(new_doc)
+        return {"status": "created", "message": "Workout plan created with exercise."}
+
+    plans = user_data.get("plans", [])
+    for plan in plans:
+        if plan["name"].lower() == plan_name.lower():
+
+            for ex in plan.get("exercises", []):
+                if ex["name"].lower() == exercise_name.lower():
+                    ex["sets"] = sets_list       # update list of sets
+                    ex["updated_at"] = datetime.datetime.utcnow()
+
+                    workout_plan_col.update_one(
+                        {"user_id": user_id},
+                        {"$set": {"plans": plans, "updated_at": datetime.datetime.utcnow()}}
+                    )
+                    return {"status": "updated", "message": "Exercise sets updated."}
+
+            plan["exercises"].append(exercise_obj)
+            workout_plan_col.update_one(
+                {"user_id": user_id},
+                {"$set": {"plans": plans, "updated_at": datetime.datetime.utcnow()}}
+            )
+            return {"status": "added", "message": "Exercise added to plan."}
+
+    new_plan = {
+        "name": plan_name,
+        "created_at": datetime.datetime.utcnow(),
+        "updated_at": datetime.datetime.utcnow(),
+        "exercises": [exercise_obj]
+    }
+
+    workout_plan_col.update_one(
+        {"user_id": user_id},
+        {"$push": {"plans": new_plan}, "$set": {"updated_at": datetime.datetime.utcnow()}}
+    )
+
+    return {"status": "plan_created", "message": "New plan created with exercise."}
+def get_workout_plan(user_id: str, plan_name: str = None, list_only: bool = False):
+    if not user_id:
+        return {"error": "User ID is required."}
     
+    if workout_plan_col is None:
+        raise RuntimeError(
+            "No MongoDB collection available as 'calories_col'.\n"
+            "Provide one of the following in your environment:\n"
+            " - a module `db_connection` exposing `db` (pymongo.Database),\n"
+            " - a module `db` exposing a `db` (pymongo.Database),\n"
+            " - set MONGO_URI environment variable so the service can connect directly.\n"
+            "Or adapt `api/services/calories_service.py` to your project's DB loader."
+        )
+    user_data = workout_plan_col.find_one({"user_id": user_id}, {"_id": 0})
+
+    if not user_data:
+        return {"error": "User has no workout plans."}
+    plans = user_data.get("plans", [])
+    if list_only:
+            return {
+                "status": "success",
+                "plans": [p["name"] for p in plans]
+            }
+    if not plan_name:
+        return {"error": "Plan name is required."}
+    plan_name = plan_name.strip().title()
+    for plan in user_data.get("plans", []):
+        if plan["name"].lower() == plan_name.lower():
+            return {
+                "status": "success",
+                "plan": plan
+            }
+
+    return {"error": "Plan not found."}
+
+def save_plan_and_daily(user_id: str, date: str, plan_name: str, frontend_exercises: list):
+    """
+    OVERWRITE semantics:
+      - Overwrite the named plan's exercises with frontend_exercises
+      - Overwrite the daily workout log for given date with frontend_exercises (and recompute summary)
+    frontend_exercises expected shape (frontend): [
+      {
+        "exercise_name": "Bench Press",
+        "muscle_group": "Chest",
+        "reps": [12,10,8],
+        "weight": 40,
+        "sets": 3,
+        "duration_minutes": 10,
+        "calories_burned": 50
+      }, ...
+    ]
+    """
+    if not user_id:
+        return {"error": "User ID is required."}
+    if not date:
+        return {"error": "Date is required."}
+    if not plan_name:
+        return {"error": "Plan name is required."}
+    if workout_plan_col is None or workout_col is None:
+        return {"error": "Database not initialised."}
+
+    try:
+        # --- 1) Convert frontend_exercises -> plan.exercises format ---
+        plan_exercises = []
+        for ex in frontend_exercises:
+            # Build sets list from reps array
+            reps_arr = ex.get("reps", [])
+            sets_list = []
+            # if frontend provided detailed set objects, keep them; else build simple set objects
+            if reps_arr and all(isinstance(r, (int, float)) for r in reps_arr):
+                for i, r in enumerate(reps_arr):
+                    sets_list.append({
+                        "set_number": i + 1,
+                        "reps": r,
+                        "weight": ex.get("weight"),
+                        "updated_at": datetime.datetime.utcnow()
+                    })
+            else:
+                # fallback: create a single set entry if reps is not a numeric array
+                sets_list.append({
+                    "set_number": 1,
+                    "reps": reps_arr if not isinstance(reps_arr, (int, float)) else reps_arr,
+                    "weight": ex.get("weight"),
+                    "updated_at": datetime.datetime.utcnow()
+                })
+
+            plan_exercises.append({
+                "name": ex.get("exercise_name") or ex.get("name"),
+                "muscle_group": ex.get("muscle_group"),
+                "sets": sets_list,
+                "duration_minutes": ex.get("duration_minutes", 0),
+                "calories_burned": ex.get("calories_burned", 0),
+                "updated_at": datetime.datetime.utcnow()
+            })
+
+        # --- 2) Overwrite the plan's exercises (create plan if missing) ---
+        user_plan_doc = workout_plan_col.find_one({"user_id": user_id})
+        if not user_plan_doc:
+            new_plan = {
+                "name": plan_name.strip().title(),
+                "created_at": datetime.datetime.utcnow(),
+                "updated_at": datetime.datetime.utcnow(),
+                "exercises": plan_exercises
+            }
+            new_doc = {
+                "user_id": user_id,
+                "plans": [new_plan],
+                "created_at": datetime.datetime.utcnow(),
+                "updated_at": datetime.datetime.utcnow()
+            }
+            workout_plan_col.insert_one(new_doc)
+        else:
+            plans = user_plan_doc.get("plans", [])
+            new_plans = []
+            plan_found = False
+
+            for plan in plans:
+                if plan.get("name", "").lower() == plan_name.strip().lower():
+                    # FULL REPLACE (overwrite)
+                    new_plans.append({
+                        "name": plan_name.strip().title(),
+                        "created_at": plan.get("created_at", datetime.datetime.utcnow()),
+                        "updated_at": datetime.datetime.utcnow(),
+                        "exercises": plan_exercises
+                    })
+                    plan_found = True
+                else:
+                    # keep other plans untouched
+                    new_plans.append(plan)
+
+            # If plan not found → create it
+            if not plan_found:
+                new_plans.append({
+                    "name": plan_name.strip().title(),
+                    "created_at": datetime.datetime.utcnow(),
+                    "updated_at": datetime.datetime.utcnow(),
+                    "exercises": plan_exercises
+                })
+
+            # FINAL write
+            workout_plan_col.update_one(
+                {"user_id": user_id},
+                {"$set": {"plans": new_plans, "updated_at": datetime.datetime.utcnow()}}
+            )
+
+
+        # --- 3) Overwrite daily workout log for date with frontend_exercises (normalized) ---
+        # Build workout_data in the shape your frontend expects (exercise_name, reps array, sets count, weight, etc.)
+        workout_data_for_day = []
+        for ex in frontend_exercises:
+            reps = ex.get("reps", [])
+            sets_count = ex.get("sets", len(reps) if isinstance(reps, list) else (1 if reps else 0))
+            workout_data_for_day.append({
+                "exercise_name": ex.get("exercise_name") or ex.get("name"),
+                "muscle_group": ex.get("muscle_group", "Other"),
+                "reps": reps,
+                "weight": ex.get("weight"),
+                "sets": sets_count,
+                "duration_minutes": ex.get("duration_minutes", 0),
+                "calories_burned": ex.get("calories_burned", 0),
+                "updated_at": datetime.datetime.utcnow()
+            })
+
+        # compute summary
+        summary = compute_workout_summary(workout_data_for_day)
+
+        # upsert the daily log (overwrite)
+        workout_col.update_one(
+            {"user_id": user_id, "date": date},
+            {"$set": {
+                "user_id": user_id,
+                "date": date,
+                "workout_data": workout_data_for_day,
+                "summary": summary,
+                "created_at": datetime.datetime.utcnow()
+            }},
+            upsert=True
+        )
+
+        # trigger and progress updates (use existing helpers)
+        handle_wo_summary_trigger(user_id, summary, date)
+        update_daily_progress(user_id, date)
+
+        return {"status": "success", "message": "Plan and daily workout updated.", "workout_data": workout_data_for_day, "summary": summary}
+
+    except Exception as e:
+        print(f"❌ Error in save_plan_and_daily: {e}")
+        return {"error": str(e)}
+def delete_set(data):
+    doc = workout_col.find_one({"user_id": data.user_id, "date": data.date})
+    if not doc:
+        return {"status": "error", "message": "Workout log not found"}
+
+    workouts = doc.get("workout_data", [])
+
+
+    # Find matching exercise
+    for i, w in enumerate(workouts):
+        if w["exercise_name"].lower() == data.exercise_name.lower():
+            old_sets = w["sets"] or 1
+            avg_duration = (w.get("duration_minutes", 0) or 0) / old_sets
+            avg_calories = (w.get("calories_burned", 0) or 0) / old_sets
+            # Validate set index
+            if data.set_index < 0 or data.set_index >= len(w["reps"]):
+                return {"status": "error", "message": "Invalid set index"}
+
+            # Remove the specific set
+            w["reps"].pop(data.set_index)
+            if isinstance(w.get("weight"), list):
+                w["weight"].pop(data.set_index)
+
+            # If no sets left → delete entire exercise
+            if len(w["reps"]) == 0:
+                workouts.pop(i)
+            else:
+                w["sets"] = len(w["reps"])
+            new_sets = w["sets"]
+            w["duration_minutes"] = round(avg_duration * new_sets, 2)
+            w["calories_burned"] = round(avg_calories * new_sets, 2)
+
+            summary = compute_workout_summary(workouts)
+            # Save back
+            workout_col.update_one(
+                {"user_id": data.user_id, "date": data.date},
+                {"$set": {"workout_data": workouts,"summary": summary}}
+            )
+
+            latest_doc = workout_col.find_one({"user_id": data.user_id, "date": data.date})
+            latest_summary = latest_doc.get("summary", {}) if latest_doc else {}
+            handle_wo_summary_trigger(data.user_id, latest_summary,data.date)
+            update_daily_progress(data.user_id,data.date)
+            return {"status": "success", "message": "Set deleted"}
+
+    return {"status": "error", "message": "Exercise not found"}
+
+def edit_set(data):
+    doc = workout_col.find_one({"user_id": data.user_id, "date": data.date})
+    if not doc:
+        return {"status": "error", "message": "Workout log not found"}
+
+    workouts = doc.get("workout_data", [])
+
+    found = None
+    for w in workouts:
+        if w["exercise_name"].lower() == data.exercise_name.lower():
+            found = w
+            break
+
+    if not found:
+        return {"status": "error", "message": "Exercise not found"}
+    old_sets = found["sets"] or 1
+    avg_duration = (found.get("duration_minutes", 0) or 0) / old_sets
+    avg_calories = (found.get("calories_burned", 0) or 0) / old_sets
+    found["reps"] = data.reps
+    found["weight"] = data.weight
+    found["sets"] = len(data.reps)
+    new_sets = found["sets"]
+    found["duration_minutes"] = round(avg_duration * new_sets, 2)
+    found["calories_burned"] = round(avg_calories * new_sets, 2)
+
+    summary = compute_workout_summary(workouts)
+    workout_col.update_one(
+        {"user_id": data.user_id, "date": data.date},
+        {"$set": {"workout_data": workouts,"summary": summary}}
+    )
+    latest_doc = workout_col.find_one({"user_id": data.user_id, "date": data.date})
+    latest_summary = latest_doc.get("summary", {}) if latest_doc else {}
+    handle_wo_summary_trigger(data.user_id, latest_summary,data.date)
+    update_daily_progress(data.user_id,data.date)
+    return {"status": "success", "message": "Exercise updated"}

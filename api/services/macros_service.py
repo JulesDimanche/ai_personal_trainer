@@ -10,18 +10,7 @@ try:
     macro_collection = _db['macro_plans']
     print("Using macro_collection from db_connection module")
 except Exception:
-    try:
-        import db as _db_mod 
-        if hasattr(_db_mod, "__getitem__"):
-            macro_collection = _db_mod['macro_pans']
-        else:
-            db_obj = getattr(_db_mod, "db", None) or getattr(_db_mod, "get_db", None)
-            if callable(db_obj):
-                macro_collection = db_obj()['macro_plans']
-            elif db_obj is not None:
-                macro_collection = db_obj['macro_plans']
-    except Exception:
-        macro_collection = None
+    macro_collection = None
 
 if macro_collection is None:
     try:
@@ -71,3 +60,24 @@ def generate_and_upsert_macro(user_payload: Dict[str, Any]) -> Dict[str, Any]:
     except Exception as e:
         print(f"generate_initial_week failed for {plan_doc['user_id']}: {e}")
     return stored_doc or plan_doc
+def view_macros(user_id: str) -> Dict[str, Any]:
+    if not user_id:
+        raise ValueError("user_id must be provided")
+
+    if macro_collection is None:
+        raise RuntimeError(
+            "No MongoDB collection available as 'macro_collection'.\n"
+            "Provide one of the following in your environment:\n"
+            " - a module `db_connection` exposing `db` (pymongo.Database),\n"
+            " - a module `db` exposing a `db` (pymongo.Database),\n"
+            " - set MONGO_URI environment variable so the service can connect directly.\n"
+            "Or adapt `api/services/macro_service.py` to your project's DB loader."
+        )
+
+    filter_q = {"user_id": user_id}
+    user_data = macro_collection.find_one(filter_q, {"_id": 0})
+
+    if not user_data:
+        raise ValueError(f"No macro plan found for user_id: {user_id}")
+
+    return user_data

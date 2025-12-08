@@ -1,0 +1,17 @@
+{
+  "dependencies": {
+    "axion": "^0.1.0",
+    "clsx": "^2.1.1",
+    "dayjs": "^1.11.19",
+    "framer-motion": "^10.18.0",
+    "lucide-react": "^0.555.0",
+    "recharts": "^3.5.1",
+    "shadcn-ui": "^0.9.5",
+    "tailwind-merge": "^3.4.0"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.22",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.17"
+  }
+}

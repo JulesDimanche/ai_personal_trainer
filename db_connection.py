@@ -17,5 +17,6 @@ progress_col=db["progress"]
 progress_weekly_col=db["weekly_progress"]
 weight_col=db["weights"]
 kb_meta_col = db["knowledge_base"]
-
+user_data=db["user_data"]
+workout_plan_col=db["workout_plan"]
 print("MongoDB connected")

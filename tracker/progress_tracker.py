@@ -28,7 +28,9 @@ from datetime import datetime, timedelta
 from typing import Dict, Any, Optional, List
 import math
 import os
-from db_connection import progress_col, diet_col, workout_col, user_col, macro_collection,progress_weekly_col,weight_col,summary_col,workout_summary_col
+import sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from db_connection import progress_col,macro_collection,progress_weekly_col,weight_col,summary_col,workout_summary_col
 
 # ---------- Helpers ----------
 
@@ -511,7 +513,7 @@ def generate_next_week_docs(user_id: str, adjusted_targets: Dict[str, Any], star
 
 # ---------- Example usage ----------
 if __name__ == "__main__":
-    USER_ID = "u001"
+    USER_ID = "u003"
     PLAN_ID = "68e7d0f5c735f1588a6fff17"  # replace with actual ObjectId or string key used in your plans collection
 
     # 1) Generate initial week (call when plan is created / user confirms)
@@ -533,7 +535,7 @@ if __name__ == "__main__":
 
     # 3) At week end, aggregate & adapt (provide the week start date)
     # Suppose week starts on 2025-10-06
-    WEEK_START = "2025-10-27"
+    WEEK_START = "2025-11-24"
     try:
         print("Aggregating & adapting week starting:", WEEK_START)
         adapt_res = aggregate_and_adapt_week(USER_ID, WEEK_START)

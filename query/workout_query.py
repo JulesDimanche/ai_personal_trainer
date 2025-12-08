@@ -4,6 +4,8 @@ import re
 from datetime import datetime, timedelta
 from dateutil import parser
 from pymongo import MongoClient
+import sys
+sys.path.append('..')
 from db_connection import db, workout_col
 
 
@@ -136,8 +138,8 @@ def format_workout_response(query_data):
         return "Formatting error."
 
 if __name__ == "__main__":
-    user_id = "u001"
-    query = build_workout_query({'intent': 'workout', 'start_date': None, 'end_date': '2025-10-24', 'exercise': "bench press"}, user_id)
+    user_id = "b441ef92-d75b-492e-be51-c2c8b46f4048"
+    query = build_workout_query({'intent': 'workout', 'start_date': None, 'end_date': '2025-12-01', 'exercise': None}, user_id)
     print("Generated Query:", query)
     results = execute_workout_query(query)
     print("Result:", results)
