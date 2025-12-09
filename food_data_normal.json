@@ -1,0 +1,1002 @@
+[
+  {
+    "food_name": "Idli with Sambar",
+    "cuisine": "South Indian",
+    "meal_type": "breakfast",
+    "serving_size": "2 pieces with 1/2 cup sambar",
+    "calories": 220,
+    "protein_g": 7,
+    "carbs_g": 40,
+    "fat_g": 3
+  },
+  {
+    "food_name": "Plain Dosa",
+    "cuisine": "South Indian",
+    "meal_type": "breakfast",
+    "serving_size": "1 medium dosa",
+    "calories": 150,
+    "protein_g": 4,
+    "carbs_g": 28,
+    "fat_g": 3
+  },
+  {
+    "food_name": "Masala Dosa",
+    "cuisine": "South Indian",
+    "meal_type": "breakfast",
+    "serving_size": "1 stuffed dosa",
+    "calories": 350,
+    "protein_g": 6,
+    "carbs_g": 50,
+    "fat_g": 12
+  },
+  {
+    "food_name": "Uttapam with Vegetables",
+    "cuisine": "South Indian",
+    "meal_type": "breakfast",
+    "serving_size": "1 medium uttapam",
+    "calories": 250,
+    "protein_g": 6,
+    "carbs_g": 40,
+    "fat_g": 7
+  },
+  {
+    "food_name": "Medu Vada",
+    "cuisine": "South Indian",
+    "meal_type": "breakfast",
+    "serving_size": "2 pieces",
+    "calories": 300,
+    "protein_g": 8,
+    "carbs_g": 30,
+    "fat_g": 16
+  },
+  {
+    "food_name": "Upma",
+    "cuisine": "South Indian",
+    "meal_type": "breakfast",
+    "serving_size": "1 cup",
+    "calories": 230,
+    "protein_g": 5,
+    "carbs_g": 35,
+    "fat_g": 8
+  },
+  {
+    "food_name": "Rava Kesari",
+    "cuisine": "South Indian",
+    "meal_type": "breakfast",
+    "serving_size": "1/2 cup",
+    "calories": 240,
+    "protein_g": 3,
+    "carbs_g": 40,
+    "fat_g": 8
+  },
+  {
+    "food_name": "Pongal",
+    "cuisine": "South Indian",
+    "meal_type": "breakfast",
+    "serving_size": "1 bowl",
+    "calories": 300,
+    "protein_g": 9,
+    "carbs_g": 40,
+    "fat_g": 10
+  },
+  {
+    "food_name": "Appam with Coconut Milk",
+    "cuisine": "South Indian",
+    "meal_type": "breakfast",
+    "serving_size": "2 appams with 1/4 cup coconut milk",
+    "calories": 330,
+    "protein_g": 4,
+    "carbs_g": 50,
+    "fat_g": 12
+  },
+  {
+    "food_name": "Pesarattu",
+    "cuisine": "South Indian",
+    "meal_type": "breakfast",
+    "serving_size": "1 medium pesarattu",
+    "calories": 200,
+    "protein_g": 10,
+    "carbs_g": 28,
+    "fat_g": 4
+  },
+  {
+    "food_name": "Ragi Dosa",
+    "cuisine": "South Indian",
+    "meal_type": "breakfast",
+    "serving_size": "1 dosa",
+    "calories": 180,
+    "protein_g": 6,
+    "carbs_g": 30,
+    "fat_g": 4
+  },
+  {
+    "food_name": "Masala Upma",
+    "cuisine": "South Indian",
+    "meal_type": "breakfast",
+    "serving_size": "1 cup",
+    "calories": 260,
+    "protein_g": 6,
+    "carbs_g": 38,
+    "fat_g": 9
+  },
+  {
+    "food_name": "Idiyappam with Coconut",
+    "cuisine": "South Indian",
+    "meal_type": "breakfast",
+    "serving_size": "2 idiyappam with grated coconut",
+    "calories": 290,
+    "protein_g": 4,
+    "carbs_g": 50,
+    "fat_g": 9
+  },
+  {
+    "food_name": "Kuzhi Paniyaram",
+    "cuisine": "South Indian",
+    "meal_type": "breakfast",
+    "serving_size": "6 pieces",
+    "calories": 260,
+    "protein_g": 7,
+    "carbs_g": 36,
+    "fat_g": 9
+  },
+  {
+    "food_name": "Vermicelli Upma",
+    "cuisine": "South Indian",
+    "meal_type": "breakfast",
+    "serving_size": "1 cup",
+    "calories": 240,
+    "protein_g": 5,
+    "carbs_g": 38,
+    "fat_g": 7
+  },
+  {
+    "food_name": "Onion Rava Dosa",
+    "cuisine": "South Indian",
+    "meal_type": "breakfast",
+    "serving_size": "1 dosa",
+    "calories": 320,
+    "protein_g": 6,
+    "carbs_g": 45,
+    "fat_g": 12
+  },
+  {
+    "food_name": "Set Dosa with Chutney",
+    "cuisine": "South Indian",
+    "meal_type": "breakfast",
+    "serving_size": "2 dosas with chutney",
+    "calories": 290,
+    "protein_g": 7,
+    "carbs_g": 45,
+    "fat_g": 7
+  },
+  {
+    "food_name": "Plain Uttapam",
+    "cuisine": "South Indian",
+    "meal_type": "breakfast",
+    "serving_size": "1 medium uttapam",
+    "calories": 220,
+    "protein_g": 5,
+    "carbs_g": 38,
+    "fat_g": 5
+  },
+  {
+    "food_name": "Tomato Chutney",
+    "cuisine": "South Indian",
+    "meal_type": "breakfast",
+    "serving_size": "2 tbsp",
+    "calories": 40,
+    "protein_g": 1,
+    "carbs_g": 6,
+    "fat_g": 2
+  },
+  {
+    "food_name": "Coconut Chutney",
+    "cuisine": "South Indian",
+    "meal_type": "breakfast",
+    "serving_size": "2 tbsp",
+    "calories": 80,
+    "protein_g": 1,
+    "carbs_g": 4,
+    "fat_g": 7
+  },
+  {
+    "food_name": "Sambar",
+    "cuisine": "South Indian",
+    "meal_type": "breakfast",
+    "serving_size": "1 cup",
+    "calories": 120,
+    "protein_g": 6,
+    "carbs_g": 20,
+    "fat_g": 2
+  },
+  {
+    "food_name": "Poori with Potato Masala",
+    "cuisine": "South Indian",
+    "meal_type": "breakfast",
+    "serving_size": "2 pooris with masala",
+    "calories": 400,
+    "protein_g": 7,
+    "carbs_g": 45,
+    "fat_g": 20
+  },
+  {
+    "food_name": "Ven Pongal",
+    "cuisine": "South Indian",
+    "meal_type": "breakfast",
+    "serving_size": "1 bowl",
+    "calories": 320,
+    "protein_g": 8,
+    "carbs_g": 45,
+    "fat_g": 10
+  },
+  {
+    "food_name": "Ragi Idli",
+    "cuisine": "South Indian",
+    "meal_type": "breakfast",
+    "serving_size": "2 pieces",
+    "calories": 180,
+    "protein_g": 6,
+    "carbs_g": 30,
+    "fat_g": 3
+  },
+  {
+    "food_name": "Kara Paniyaram",
+    "cuisine": "South Indian",
+    "meal_type": "breakfast",
+    "serving_size": "6 pieces",
+    "calories": 270,
+    "protein_g": 7,
+    "carbs_g": 36,
+    "fat_g": 10
+  },
+  {
+    "food_name": "Sambar Rice",
+    "cuisine": "South Indian",
+    "meal_type": "lunch",
+    "serving_size": "1 cup cooked",
+    "calories": 310,
+    "protein_g": 10,
+    "carbs_g": 52,
+    "fat_g": 6
+  },
+  {
+    "food_name": "Curd Rice",
+    "cuisine": "South Indian",
+    "meal_type": "lunch",
+    "serving_size": "1 cup",
+    "calories": 290,
+    "protein_g": 8,
+    "carbs_g": 46,
+    "fat_g": 8
+  },
+  {
+    "food_name": "Rasam Rice",
+    "cuisine": "South Indian",
+    "meal_type": "lunch",
+    "serving_size": "1 cup cooked",
+    "calories": 250,
+    "protein_g": 6,
+    "carbs_g": 48,
+    "fat_g": 3
+  },
+  {
+    "food_name": "Lemon Rice",
+    "cuisine": "South Indian",
+    "meal_type": "lunch",
+    "serving_size": "1 cup",
+    "calories": 320,
+    "protein_g": 7,
+    "carbs_g": 50,
+    "fat_g": 10
+  },
+  {
+    "food_name": "Tamarind Rice (Puliyodarai)",
+    "cuisine": "South Indian",
+    "meal_type": "lunch",
+    "serving_size": "1 cup",
+    "calories": 350,
+    "protein_g": 7,
+    "carbs_g": 52,
+    "fat_g": 12
+  },
+  {
+    "food_name": "Coconut Rice",
+    "cuisine": "South Indian",
+    "meal_type": "lunch",
+    "serving_size": "1 cup",
+    "calories": 360,
+    "protein_g": 6,
+    "carbs_g": 50,
+    "fat_g": 14
+  },
+  {
+    "food_name": "Vegetable Biryani (South Indian Style)",
+    "cuisine": "South Indian",
+    "meal_type": "lunch",
+    "serving_size": "1 cup",
+    "calories": 330,
+    "protein_g": 8,
+    "carbs_g": 54,
+    "fat_g": 9
+  },
+  {
+    "food_name": "Curd with Brown Rice",
+    "cuisine": "South Indian",
+    "meal_type": "lunch",
+    "serving_size": "1 cup",
+    "calories": 280,
+    "protein_g": 8,
+    "carbs_g": 44,
+    "fat_g": 7
+  },
+  {
+    "food_name": "Avial with Rice",
+    "cuisine": "South Indian",
+    "meal_type": "lunch",
+    "serving_size": "1 cup rice + 1/2 cup avial",
+    "calories": 350,
+    "protein_g": 9,
+    "carbs_g": 52,
+    "fat_g": 12
+  },
+  {
+    "food_name": "Vegetable Kurma with Rice",
+    "cuisine": "South Indian",
+    "meal_type": "lunch",
+    "serving_size": "1 cup rice + 1/2 cup kurma",
+    "calories": 360,
+    "protein_g": 8,
+    "carbs_g": 50,
+    "fat_g": 14
+  },
+  {
+    "food_name": "Mysore Rasam with Rice",
+    "cuisine": "South Indian",
+    "meal_type": "lunch",
+    "serving_size": "1 cup rice + 1/2 cup rasam",
+    "calories": 260,
+    "protein_g": 7,
+    "carbs_g": 48,
+    "fat_g": 3
+  },
+  {
+    "food_name": "Tomato Rice",
+    "cuisine": "South Indian",
+    "meal_type": "lunch",
+    "serving_size": "1 cup",
+    "calories": 300,
+    "protein_g": 7,
+    "carbs_g": 50,
+    "fat_g": 8
+  },
+  {
+    "food_name": "Vegetable Rice Bath",
+    "cuisine": "South Indian",
+    "meal_type": "lunch",
+    "serving_size": "1 cup",
+    "calories": 310,
+    "protein_g": 7,
+    "carbs_g": 50,
+    "fat_g": 8
+  },
+  {
+    "food_name": "Bisi Bele Bath",
+    "cuisine": "South Indian",
+    "meal_type": "lunch",
+    "serving_size": "1 cup",
+    "calories": 340,
+    "protein_g": 10,
+    "carbs_g": 52,
+    "fat_g": 10
+  },
+  {
+    "food_name": "Keerai Kootu with Rice",
+    "cuisine": "South Indian",
+    "meal_type": "lunch",
+    "serving_size": "1 cup rice + 1/2 cup kootu",
+    "calories": 320,
+    "protein_g": 10,
+    "carbs_g": 50,
+    "fat_g": 8
+  },
+  {
+    "food_name": "Brown Rice with Sambar",
+    "cuisine": "South Indian",
+    "meal_type": "lunch",
+    "serving_size": "1 cup rice + 3/4 cup sambar",
+    "calories": 330,
+    "protein_g": 11,
+    "carbs_g": 54,
+    "fat_g": 5
+  },
+  {
+    "food_name": "Curd with Lemon Rice",
+    "cuisine": "South Indian",
+    "meal_type": "lunch",
+    "serving_size": "3/4 cup lemon rice + 1/2 cup curd",
+    "calories": 350,
+    "protein_g": 9,
+    "carbs_g": 48,
+    "fat_g": 12
+  },
+  {
+    "food_name": "Fish Curry with Rice (Kerala Style)",
+    "cuisine": "South Indian",
+    "meal_type": "lunch",
+    "serving_size": "1 cup rice + 1 fish piece",
+    "calories": 380,
+    "protein_g": 22,
+    "carbs_g": 50,
+    "fat_g": 10
+  },
+  {
+    "food_name": "Chettinad Chicken Curry with Rice",
+    "cuisine": "South Indian",
+    "meal_type": "lunch",
+    "serving_size": "1 cup rice + 1/2 cup chicken",
+    "calories": 420,
+    "protein_g": 25,
+    "carbs_g": 50,
+    "fat_g": 12
+  },
+  {
+    "food_name": "Onion Sambar Rice",
+    "cuisine": "South Indian",
+    "meal_type": "lunch",
+    "serving_size": "1 cup",
+    "calories": 300,
+    "protein_g": 9,
+    "carbs_g": 50,
+    "fat_g": 6
+  },
+  {
+    "food_name": "Egg Curry with Rice",
+    "cuisine": "South Indian",
+    "meal_type": "lunch",
+    "serving_size": "1 cup rice + 1 egg",
+    "calories": 350,
+    "protein_g": 15,
+    "carbs_g": 50,
+    "fat_g": 10
+  },
+  {
+    "food_name": "Vegetable Poriyal with Rice",
+    "cuisine": "South Indian",
+    "meal_type": "lunch",
+    "serving_size": "1 cup rice + 1/2 cup poriyal",
+    "calories": 300,
+    "protein_g": 7,
+    "carbs_g": 50,
+    "fat_g": 6
+  },
+  {
+    "food_name": "Mor Kuzhambu with Rice",
+    "cuisine": "South Indian",
+    "meal_type": "lunch",
+    "serving_size": "1 cup rice + 1/2 cup kuzhambu",
+    "calories": 310,
+    "protein_g": 8,
+    "carbs_g": 48,
+    "fat_g": 9
+  },
+  {
+    "food_name": "Cabbage Kootu with Rice",
+    "cuisine": "South Indian",
+    "meal_type": "lunch",
+    "serving_size": "1 cup rice + 1/2 cup kootu",
+    "calories": 310,
+    "protein_g": 10,
+    "carbs_g": 50,
+    "fat_g": 7
+  },
+  {
+    "food_name": "Tomato Rasam with Brown Rice",
+    "cuisine": "South Indian",
+    "meal_type": "lunch",
+    "serving_size": "1 cup rice + 1/2 cup rasam",
+    "calories": 270,
+    "protein_g": 7,
+    "carbs_g": 48,
+    "fat_g": 4
+  },
+  {
+    "food_name": "Plain Dosa with Coconut Chutney",
+    "cuisine": "South Indian",
+    "meal_type": "dinner",
+    "serving_size": "1 dosa + 2 tbsp chutney",
+    "calories": 220,
+    "protein_g": 4,
+    "carbs_g": 30,
+    "fat_g": 8
+  },
+  {
+    "food_name": "Idli with Sambar",
+    "cuisine": "South Indian",
+    "meal_type": "dinner",
+    "serving_size": "2 idlis + 1 cup sambar",
+    "calories": 260,
+    "protein_g": 10,
+    "carbs_g": 44,
+    "fat_g": 4
+  },
+  {
+    "food_name": "Vegetable Upma",
+    "cuisine": "South Indian",
+    "meal_type": "dinner",
+    "serving_size": "1 medium bowl",
+    "calories": 280,
+    "protein_g": 6,
+    "carbs_g": 45,
+    "fat_g": 8
+  },
+  {
+    "food_name": "Curd Rice",
+    "cuisine": "South Indian",
+    "meal_type": "dinner",
+    "serving_size": "1 cup",
+    "calories": 230,
+    "protein_g": 6,
+    "carbs_g": 36,
+    "fat_g": 6
+  },
+  {
+    "food_name": "Lemon Rice",
+    "cuisine": "South Indian",
+    "meal_type": "dinner",
+    "serving_size": "1 cup",
+    "calories": 300,
+    "protein_g": 6,
+    "carbs_g": 48,
+    "fat_g": 10
+  },
+  {
+    "food_name": "Rava Dosa",
+    "cuisine": "South Indian",
+    "meal_type": "dinner",
+    "serving_size": "1 dosa",
+    "calories": 200,
+    "protein_g": 4,
+    "carbs_g": 28,
+    "fat_g": 7
+  },
+  {
+    "food_name": "Masala Dosa",
+    "cuisine": "South Indian",
+    "meal_type": "dinner",
+    "serving_size": "1 dosa",
+    "calories": 350,
+    "protein_g": 7,
+    "carbs_g": 50,
+    "fat_g": 12
+  },
+  {
+    "food_name": "Vegetable Kuzhi Paniyaram",
+    "cuisine": "South Indian",
+    "meal_type": "dinner",
+    "serving_size": "6 pieces",
+    "calories": 260,
+    "protein_g": 6,
+    "carbs_g": 36,
+    "fat_g": 9
+  },
+  {
+    "food_name": "Vegetable Pongal",
+    "cuisine": "South Indian",
+    "meal_type": "dinner",
+    "serving_size": "1 medium bowl",
+    "calories": 320,
+    "protein_g": 9,
+    "carbs_g": 42,
+    "fat_g": 10
+  },
+  {
+    "food_name": "Onion Uttapam",
+    "cuisine": "South Indian",
+    "meal_type": "dinner",
+    "serving_size": "1 uttapam",
+    "calories": 300,
+    "protein_g": 7,
+    "carbs_g": 42,
+    "fat_g": 10
+  },
+  {
+    "food_name": "Tomato Rice",
+    "cuisine": "South Indian",
+    "meal_type": "dinner",
+    "serving_size": "1 cup",
+    "calories": 290,
+    "protein_g": 6,
+    "carbs_g": 48,
+    "fat_g": 7
+  },
+  {
+    "food_name": "Appam with Vegetable Stew",
+    "cuisine": "South Indian",
+    "meal_type": "dinner",
+    "serving_size": "2 appams + 1/2 cup stew",
+    "calories": 340,
+    "protein_g": 5,
+    "carbs_g": 52,
+    "fat_g": 12
+  },
+  {
+    "food_name": "Rasam Rice",
+    "cuisine": "South Indian",
+    "meal_type": "dinner",
+    "serving_size": "1 cup rice + rasam",
+    "calories": 220,
+    "protein_g": 5,
+    "carbs_g": 42,
+    "fat_g": 2
+  },
+  {
+    "food_name": "Bisibelebath",
+    "cuisine": "South Indian",
+    "meal_type": "dinner",
+    "serving_size": "1 cup",
+    "calories": 350,
+    "protein_g": 10,
+    "carbs_g": 50,
+    "fat_g": 10
+  },
+  {
+    "food_name": "Vegetable Sevai",
+    "cuisine": "South Indian",
+    "meal_type": "dinner",
+    "serving_size": "1 cup",
+    "calories": 280,
+    "protein_g": 6,
+    "carbs_g": 48,
+    "fat_g": 6
+  },
+  {
+    "food_name": "Tomato Uttapam",
+    "cuisine": "South Indian",
+    "meal_type": "dinner",
+    "serving_size": "1 uttapam",
+    "calories": 290,
+    "protein_g": 6,
+    "carbs_g": 42,
+    "fat_g": 9
+  },
+  {
+    "food_name": "Mysore Masala Dosa",
+    "cuisine": "South Indian",
+    "meal_type": "dinner",
+    "serving_size": "1 dosa",
+    "calories": 380,
+    "protein_g": 8,
+    "carbs_g": 52,
+    "fat_g": 14
+  },
+  {
+    "food_name": "Veg Dal Adai",
+    "cuisine": "South Indian",
+    "meal_type": "dinner",
+    "serving_size": "1 adai",
+    "calories": 230,
+    "protein_g": 10,
+    "carbs_g": 30,
+    "fat_g": 6
+  },
+  {
+    "food_name": "Gobi Rice",
+    "cuisine": "South Indian",
+    "meal_type": "dinner",
+    "serving_size": "1 cup",
+    "calories": 310,
+    "protein_g": 7,
+    "carbs_g": 48,
+    "fat_g": 9
+  },
+  {
+    "food_name": "Kara Kozhukattai",
+    "cuisine": "South Indian",
+    "meal_type": "dinner",
+    "serving_size": "5 dumplings",
+    "calories": 240,
+    "protein_g": 5,
+    "carbs_g": 42,
+    "fat_g": 5
+  },
+  {
+    "food_name": "Pesarattu with Ginger Chutney",
+    "cuisine": "South Indian",
+    "meal_type": "dinner",
+    "serving_size": "1 pesarattu + 2 tbsp chutney",
+    "calories": 260,
+    "protein_g": 11,
+    "carbs_g": 32,
+    "fat_g": 8
+  },
+  {
+    "food_name": "Ragi Dosa",
+    "cuisine": "South Indian",
+    "meal_type": "dinner",
+    "serving_size": "1 dosa",
+    "calories": 200,
+    "protein_g": 6,
+    "carbs_g": 28,
+    "fat_g": 6
+  },
+  {
+    "food_name": "Chapati with Vegetable Kurma",
+    "cuisine": "South Indian",
+    "meal_type": "dinner",
+    "serving_size": "2 chapatis + 1/2 cup kurma",
+    "calories": 330,
+    "protein_g": 9,
+    "carbs_g": 47,
+    "fat_g": 10
+  },
+  {
+    "food_name": "Idiyappam with Vegetable Stew",
+    "cuisine": "South Indian",
+    "meal_type": "dinner",
+    "serving_size": "3 idiyappam + 1/2 cup stew",
+    "calories": 320,
+    "protein_g": 6,
+    "carbs_g": 56,
+    "fat_g": 8
+  },
+  {
+    "food_name": "Plain Uttapam",
+    "cuisine": "South Indian",
+    "meal_type": "dinner",
+    "serving_size": "1 uttapam",
+    "calories": 250,
+    "protein_g": 6,
+    "carbs_g": 38,
+    "fat_g": 7
+  },
+  {
+    "food_name": "Medu Vada",
+    "cuisine": "South Indian",
+    "meal_type": "snack",
+    "serving_size": "2 pieces",
+    "calories": 290,
+    "protein_g": 8,
+    "carbs_g": 26,
+    "fat_g": 16
+  },
+  {
+    "food_name": "Masala Vada",
+    "cuisine": "South Indian",
+    "meal_type": "snack",
+    "serving_size": "3 pieces",
+    "calories": 300,
+    "protein_g": 10,
+    "carbs_g": 30,
+    "fat_g": 14
+  },
+  {
+    "food_name": "Sweet Potato Fry",
+    "cuisine": "South Indian",
+    "meal_type": "snack",
+    "serving_size": "1 cup",
+    "calories": 220,
+    "protein_g": 3,
+    "carbs_g": 38,
+    "fat_g": 7
+  },
+  {
+    "food_name": "Sundal (Chickpea Sundal)",
+    "cuisine": "South Indian",
+    "meal_type": "snack",
+    "serving_size": "1 bowl",
+    "calories": 250,
+    "protein_g": 12,
+    "carbs_g": 30,
+    "fat_g": 9
+  },
+  {
+    "food_name": "Banana Bajji",
+    "cuisine": "South Indian",
+    "meal_type": "snack",
+    "serving_size": "3 pieces",
+    "calories": 310,
+    "protein_g": 4,
+    "carbs_g": 50,
+    "fat_g": 12
+  },
+  {
+    "food_name": "Onion Pakoda",
+    "cuisine": "South Indian",
+    "meal_type": "snack",
+    "serving_size": "1 plate",
+    "calories": 330,
+    "protein_g": 7,
+    "carbs_g": 34,
+    "fat_g": 18
+  },
+  {
+    "food_name": "Murukku",
+    "cuisine": "South Indian",
+    "meal_type": "snack",
+    "serving_size": "4 pieces",
+    "calories": 250,
+    "protein_g": 4,
+    "carbs_g": 28,
+    "fat_g": 13
+  },
+  {
+    "food_name": "Paniyaram",
+    "cuisine": "South Indian",
+    "meal_type": "snack",
+    "serving_size": "6 pieces",
+    "calories": 260,
+    "protein_g": 7,
+    "carbs_g": 34,
+    "fat_g": 9
+  },
+  {
+    "food_name": "Rava Kesari",
+    "cuisine": "South Indian",
+    "meal_type": "snack",
+    "serving_size": "1 portion",
+    "calories": 280,
+    "protein_g": 4,
+    "carbs_g": 48,
+    "fat_g": 9
+  },
+  {
+    "food_name": "Medhu Pakoda",
+    "cuisine": "South Indian",
+    "meal_type": "snack",
+    "serving_size": "1 plate",
+    "calories": 300,
+    "protein_g": 8,
+    "carbs_g": 32,
+    "fat_g": 14
+  },
+  {
+    "food_name": "Masala Peanuts",
+    "cuisine": "South Indian",
+    "meal_type": "snack",
+    "serving_size": "1/2 cup",
+    "calories": 270,
+    "protein_g": 11,
+    "carbs_g": 12,
+    "fat_g": 20
+  },
+  {
+    "food_name": "Aval Upma",
+    "cuisine": "South Indian",
+    "meal_type": "snack",
+    "serving_size": "1 bowl",
+    "calories": 250,
+    "protein_g": 6,
+    "carbs_g": 42,
+    "fat_g": 6
+  },
+  {
+    "food_name": "Vegetable Bonda",
+    "cuisine": "South Indian",
+    "meal_type": "snack",
+    "serving_size": "3 pieces",
+    "calories": 290,
+    "protein_g": 6,
+    "carbs_g": 36,
+    "fat_g": 14
+  },
+  {
+    "food_name": "Mysore Bonda",
+    "cuisine": "South Indian",
+    "meal_type": "snack",
+    "serving_size": "3 pieces",
+    "calories": 310,
+    "protein_g": 7,
+    "carbs_g": 36,
+    "fat_g": 15
+  },
+  {
+    "food_name": "Tomato Rasam with Rice Flakes",
+    "cuisine": "South Indian",
+    "meal_type": "snack",
+    "serving_size": "1 small bowl",
+    "calories": 180,
+    "protein_g": 5,
+    "carbs_g": 30,
+    "fat_g": 3
+  },
+  {
+    "food_name": "Puffed Rice Mixture",
+    "cuisine": "South Indian",
+    "meal_type": "snack",
+    "serving_size": "1 cup",
+    "calories": 220,
+    "protein_g": 5,
+    "carbs_g": 32,
+    "fat_g": 9
+  },
+  {
+    "food_name": "Dal Vada",
+    "cuisine": "South Indian",
+    "meal_type": "snack",
+    "serving_size": "2 pieces",
+    "calories": 280,
+    "protein_g": 10,
+    "carbs_g": 26,
+    "fat_g": 14
+  },
+  {
+    "food_name": "Sago Vada (Sabudana Vada - South Style)",
+    "cuisine": "South Indian",
+    "meal_type": "snack",
+    "serving_size": "2 pieces",
+    "calories": 300,
+    "protein_g": 4,
+    "carbs_g": 45,
+    "fat_g": 14
+  },
+  {
+    "food_name": "Nei Appam",
+    "cuisine": "South Indian",
+    "meal_type": "snack",
+    "serving_size": "3 pieces",
+    "calories": 290,
+    "protein_g": 4,
+    "carbs_g": 45,
+    "fat_g": 11
+  },
+  {
+    "food_name": "Banana Chips",
+    "cuisine": "South Indian",
+    "meal_type": "snack",
+    "serving_size": "30g",
+    "calories": 210,
+    "protein_g": 2,
+    "carbs_g": 24,
+    "fat_g": 13
+  },
+  {
+    "food_name": "Ribbon Pakoda",
+    "cuisine": "South Indian",
+    "meal_type": "snack",
+    "serving_size": "1 handful",
+    "calories": 240,
+    "protein_g": 5,
+    "carbs_g": 28,
+    "fat_g": 12
+  },
+  {
+    "food_name": "Mini Idli with Podi",
+    "cuisine": "South Indian",
+    "meal_type": "snack",
+    "serving_size": "8 mini idlis",
+    "calories": 240,
+    "protein_g": 8,
+    "carbs_g": 42,
+    "fat_g": 4
+  },
+  {
+    "food_name": "Boiled Sweet Corn with Masala",
+    "cuisine": "South Indian",
+    "meal_type": "snack",
+    "serving_size": "1 cup",
+    "calories": 180,
+    "protein_g": 6,
+    "carbs_g": 34,
+    "fat_g": 2
+  },
+  {
+    "food_name": "Keerai Vadai (Spinach Vada)",
+    "cuisine": "South Indian",
+    "meal_type": "snack",
+    "serving_size": "2 pieces",
+    "calories": 270,
+    "protein_g": 9,
+    "carbs_g": 26,
+    "fat_g": 14
+  },
+  {
+    "food_name": "Vegetable Cutlet (South Style)",
+    "cuisine": "South Indian",
+    "meal_type": "snack",
+    "serving_size": "2 cutlets",
+    "calories": 240,
+    "protein_g": 6,
+    "carbs_g": 30,
+    "fat_g": 10
+  }
+]

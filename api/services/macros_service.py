@@ -60,24 +60,32 @@ def generate_and_upsert_macro(user_payload: Dict[str, Any]) -> Dict[str, Any]:
     except Exception as e:
         print(f"generate_initial_week failed for {plan_doc['user_id']}: {e}")
     return stored_doc or plan_doc
-def view_macros(user_id: str) -> Dict[str, Any]:
+def view_macros(user_id: str,date:str) -> Dict[str, Any]:
     if not user_id:
         raise ValueError("user_id must be provided")
 
     if macro_collection is None:
-        raise RuntimeError(
-            "No MongoDB collection available as 'macro_collection'.\n"
-            "Provide one of the following in your environment:\n"
-            " - a module `db_connection` exposing `db` (pymongo.Database),\n"
-            " - a module `db` exposing a `db` (pymongo.Database),\n"
-            " - set MONGO_URI environment variable so the service can connect directly.\n"
-            "Or adapt `api/services/macro_service.py` to your project's DB loader."
-        )
+        raise RuntimeError("macro_collection not initialized")
 
-    filter_q = {"user_id": user_id}
-    user_data = macro_collection.find_one(filter_q, {"_id": 0})
+    user_data = macro_collection.find_one({"user_id": user_id}, {"_id": 0})
 
     if not user_data:
         raise ValueError(f"No macro plan found for user_id: {user_id}")
 
-    return user_data
+    date_obj = datetime.strptime(date, "%Y-%m-%d").date()
+
+    for week in user_data["Weekly_Plan"]:
+        start = datetime.strptime(week["start_date"], "%Y-%m-%d").date()
+        end = datetime.strptime(week["end_date"], "%Y-%m-%d").date()
+
+        if start <= date_obj <= end:
+            return {
+                "Goal_Calories": week["expected_calories"],
+                "Protein_g": week["expected_macros"]["Protein_g"],
+                "Fats_g": week["expected_macros"]["Fats_g"],
+                "Carbs_g": week["expected_macros"]["Carbs_g"],
+                "Fiber_g": week["expected_macros"]["Fiber_g"],
+                "week_number": week["week_number"]
+            }
+
+    raise ValueError(f"Date {date} does not fall into any macro plan range")

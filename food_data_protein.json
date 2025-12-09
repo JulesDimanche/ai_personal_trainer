@@ -1,0 +1,752 @@
+[
+  {
+    "food_name": "Paneer Bhurji",
+    "cuisine": "Indian",
+    "meal_type": "breakfast",
+    "serving_size": "1 cup",
+    "calories": 330,
+    "protein_g": 22,
+    "carbs_g": 10,
+    "fat_g": 22
+  },
+  {
+    "food_name": "Boiled Egg Whites with Masala",
+    "cuisine": "Indian",
+    "meal_type": "breakfast",
+    "serving_size": "5 egg whites",
+    "calories": 90,
+    "protein_g": 20,
+    "carbs_g": 1,
+    "fat_g": 0
+  },
+  {
+    "food_name": "Chicken Tikka (Breakfast Portion)",
+    "cuisine": "Indian",
+    "meal_type": "breakfast",
+    "serving_size": "120g",
+    "calories": 200,
+    "protein_g": 30,
+    "carbs_g": 4,
+    "fat_g": 7
+  },
+  {
+    "food_name": "Sprouts Salad",
+    "cuisine": "Indian",
+    "meal_type": "breakfast",
+    "serving_size": "1 bowl",
+    "calories": 230,
+    "protein_g": 18,
+    "carbs_g": 28,
+    "fat_g": 4
+  },
+  {
+    "food_name": "Tofu Bhurji",
+    "cuisine": "Indian",
+    "meal_type": "breakfast",
+    "serving_size": "1 cup",
+    "calories": 220,
+    "protein_g": 20,
+    "carbs_g": 8,
+    "fat_g": 12
+  },
+  {
+    "food_name": "Moong Dal Chilla with Paneer Filling",
+    "cuisine": "Indian",
+    "meal_type": "breakfast",
+    "serving_size": "2 chillas",
+    "calories": 300,
+    "protein_g": 22,
+    "carbs_g": 30,
+    "fat_g": 8
+  },
+  {
+    "food_name": "Masala Omelette",
+    "cuisine": "Indian",
+    "meal_type": "breakfast",
+    "serving_size": "3 eggs",
+    "calories": 280,
+    "protein_g": 21,
+    "carbs_g": 3,
+    "fat_g": 18
+  },
+  {
+    "food_name": "Soya Chunk Stir Fry",
+    "cuisine": "Indian",
+    "meal_type": "breakfast",
+    "serving_size": "1 cup",
+    "calories": 250,
+    "protein_g": 28,
+    "carbs_g": 14,
+    "fat_g": 8
+  },
+  {
+    "food_name": "Greek Yogurt with Nuts (Indian Style)",
+    "cuisine": "Indian",
+    "meal_type": "breakfast",
+    "serving_size": "1 cup",
+    "calories": 280,
+    "protein_g": 20,
+    "carbs_g": 18,
+    "fat_g": 14
+  },
+  {
+    "food_name": "Dal Fry (Thick Breakfast Portion)",
+    "cuisine": "Indian",
+    "meal_type": "breakfast",
+    "serving_size": "1 cup",
+    "calories": 260,
+    "protein_g": 18,
+    "carbs_g": 32,
+    "fat_g": 6
+  },
+  {
+    "food_name": "Chole Masala",
+    "cuisine": "Indian",
+    "meal_type": "breakfast",
+    "serving_size": "1 cup",
+    "calories": 300,
+    "protein_g": 19,
+    "carbs_g": 36,
+    "fat_g": 9
+  },
+  {
+    "food_name": "Rajma Curry",
+    "cuisine": "Indian",
+    "meal_type": "breakfast",
+    "serving_size": "1 cup",
+    "calories": 330,
+    "protein_g": 19,
+    "carbs_g": 44,
+    "fat_g": 7
+  },
+  {
+    "food_name": "Egg Bhurji",
+    "cuisine": "Indian",
+    "meal_type": "breakfast",
+    "serving_size": "3 eggs cooked",
+    "calories": 310,
+    "protein_g": 21,
+    "carbs_g": 6,
+    "fat_g": 21
+  },
+  {
+    "food_name": "Green Moong Dal Sprouts Sabzi",
+    "cuisine": "Indian",
+    "meal_type": "breakfast",
+    "serving_size": "1 bowl",
+    "calories": 240,
+    "protein_g": 19,
+    "carbs_g": 30,
+    "fat_g": 6
+  },
+  {
+    "food_name": "Paneer Tikka",
+    "cuisine": "Indian",
+    "meal_type": "breakfast",
+    "serving_size": "120g",
+    "calories": 290,
+    "protein_g": 21,
+    "carbs_g": 8,
+    "fat_g": 18
+  },
+  {
+    "food_name": "Kala Chana Sundal",
+    "cuisine": "Indian",
+    "meal_type": "breakfast",
+    "serving_size": "1 bowl",
+    "calories": 260,
+    "protein_g": 18,
+    "carbs_g": 32,
+    "fat_g": 7
+  },
+  {
+    "food_name": "Mixed Lentil Soup",
+    "cuisine": "Indian",
+    "meal_type": "breakfast",
+    "serving_size": "1 cup",
+    "calories": 240,
+    "protein_g": 19,
+    "carbs_g": 28,
+    "fat_g": 6
+  },
+  {
+    "food_name": "Egg Curry (Breakfast Portion)",
+    "cuisine": "Indian",
+    "meal_type": "breakfast",
+    "serving_size": "2 eggs + gravy",
+    "calories": 240,
+    "protein_g": 19,
+    "carbs_g": 8,
+    "fat_g": 14
+  },
+  {
+    "food_name": "Fish Tawa Fry",
+    "cuisine": "Indian",
+    "meal_type": "breakfast",
+    "serving_size": "100g fish",
+    "calories": 210,
+    "protein_g": 25,
+    "carbs_g": 2,
+    "fat_g": 11
+  },
+  {
+    "food_name": "Moong Dal Sundal",
+    "cuisine": "Indian",
+    "meal_type": "breakfast",
+    "serving_size": "1 bowl",
+    "calories": 230,
+    "protein_g": 18,
+    "carbs_g": 28,
+    "fat_g": 4
+  },
+  {
+    "food_name": "Tempered Tofu Cubes",
+    "cuisine": "Indian",
+    "meal_type": "breakfast",
+    "serving_size": "120g",
+    "calories": 200,
+    "protein_g": 20,
+    "carbs_g": 6,
+    "fat_g": 10
+  },
+  {
+    "food_name": "Peanut Chaat",
+    "cuisine": "Indian",
+    "meal_type": "breakfast",
+    "serving_size": "1 bowl",
+    "calories": 290,
+    "protein_g": 18,
+    "carbs_g": 16,
+    "fat_g": 18
+  },
+  {
+    "food_name": "Grilled Chicken Strips",
+    "cuisine": "Indian",
+    "meal_type": "breakfast",
+    "serving_size": "100g",
+    "calories": 180,
+    "protein_g": 30,
+    "carbs_g": 2,
+    "fat_g": 6
+  },
+  {
+    "food_name": "Boiled Soybeans (Lightly Spiced)",
+    "cuisine": "Indian",
+    "meal_type": "breakfast",
+    "serving_size": "3/4 cup",
+    "calories": 230,
+    "protein_g": 20,
+    "carbs_g": 18,
+    "fat_g": 9
+  },
+  {
+    "food_name": "Cottage Cheese (Paneer) Cubes with Chaat Masala",
+    "cuisine": "Indian",
+    "meal_type": "breakfast",
+    "serving_size": "120g",
+    "calories": 260,
+    "protein_g": 19,
+    "carbs_g": 6,
+    "fat_g": 18
+  },
+  {
+    "food_name": "Tandoori Chicken (2 pieces)",
+    "cuisine": "Indian",
+    "meal_type": "lunch",
+    "serving_size": "200g",
+    "calories": 260,
+    "protein_g": 32,
+    "carbs_g": 4,
+    "fat_g": 12
+  },
+  {
+    "food_name": "Paneer Tikka",
+    "cuisine": "Indian",
+    "meal_type": "lunch",
+    "serving_size": "180g",
+    "calories": 310,
+    "protein_g": 22,
+    "carbs_g": 10,
+    "fat_g": 20
+  },
+  {
+    "food_name": "Egg Bhurji",
+    "cuisine": "Indian",
+    "meal_type": "lunch",
+    "serving_size": "3 eggs",
+    "calories": 290,
+    "protein_g": 22,
+    "carbs_g": 6,
+    "fat_g": 20
+  },
+  {
+    "food_name": "Rajma (Kidney Bean Curry)",
+    "cuisine": "Indian",
+    "meal_type": "lunch",
+    "serving_size": "1.5 cups",
+    "calories": 260,
+    "protein_g": 18,
+    "carbs_g": 36,
+    "fat_g": 4
+  },
+  {
+    "food_name": "Chole (Chickpea Curry)",
+    "cuisine": "Indian",
+    "meal_type": "lunch",
+    "serving_size": "1.5 cups",
+    "calories": 300,
+    "protein_g": 19,
+    "carbs_g": 40,
+    "fat_g": 6
+  },
+  {
+    "food_name": "Grilled Chicken Tikka",
+    "cuisine": "Indian",
+    "meal_type": "lunch",
+    "serving_size": "180g",
+    "calories": 240,
+    "protein_g": 33,
+    "carbs_g": 3,
+    "fat_g": 10
+  },
+  {
+    "food_name": "Soya Chunk Masala",
+    "cuisine": "Indian",
+    "meal_type": "lunch",
+    "serving_size": "1 cup",
+    "calories": 230,
+    "protein_g": 24,
+    "carbs_g": 14,
+    "fat_g": 9
+  },
+  {
+    "food_name": "Methi Paneer",
+    "cuisine": "Indian",
+    "meal_type": "lunch",
+    "serving_size": "1 cup",
+    "calories": 330,
+    "protein_g": 24,
+    "carbs_g": 12,
+    "fat_g": 22
+  },
+  {
+    "food_name": "Fish Curry",
+    "cuisine": "Indian",
+    "meal_type": "lunch",
+    "serving_size": "200g",
+    "calories": 280,
+    "protein_g": 30,
+    "carbs_g": 6,
+    "fat_g": 14
+  },
+  {
+    "food_name": "Moong Dal Fry",
+    "cuisine": "Indian",
+    "meal_type": "lunch",
+    "serving_size": "1.5 cups",
+    "calories": 250,
+    "protein_g": 19,
+    "carbs_g": 32,
+    "fat_g": 6
+  },
+  {
+    "food_name": "Masoor Dal Tadka",
+    "cuisine": "Indian",
+    "meal_type": "lunch",
+    "serving_size": "1.5 cups",
+    "calories": 265,
+    "protein_g": 21,
+    "carbs_g": 34,
+    "fat_g": 6
+  },
+  {
+    "food_name": "Mutton Kheema (Lean)",
+    "cuisine": "Indian",
+    "meal_type": "lunch",
+    "serving_size": "150g",
+    "calories": 310,
+    "protein_g": 27,
+    "carbs_g": 4,
+    "fat_g": 20
+  },
+  {
+    "food_name": "Sprout Moong Masala",
+    "cuisine": "Indian",
+    "meal_type": "lunch",
+    "serving_size": "1.5 cups",
+    "calories": 230,
+    "protein_g": 18,
+    "carbs_g": 32,
+    "fat_g": 5
+  },
+  {
+    "food_name": "Chicken Saagwala",
+    "cuisine": "Indian",
+    "meal_type": "lunch",
+    "serving_size": "200g",
+    "calories": 295,
+    "protein_g": 32,
+    "carbs_g": 8,
+    "fat_g": 14
+  },
+  {
+    "food_name": "Palak Paneer",
+    "cuisine": "Indian",
+    "meal_type": "lunch",
+    "serving_size": "1 cup",
+    "calories": 310,
+    "protein_g": 21,
+    "carbs_g": 14,
+    "fat_g": 20
+  },
+  {
+    "food_name": "Egg Curry (3 eggs)",
+    "cuisine": "Indian",
+    "meal_type": "lunch",
+    "serving_size": "250g",
+    "calories": 300,
+    "protein_g": 25,
+    "carbs_g": 8,
+    "fat_g": 18
+  },
+  {
+    "food_name": "Dhaba Style Dal (Mixed Lentils)",
+    "cuisine": "Indian",
+    "meal_type": "lunch",
+    "serving_size": "1.5 cups",
+    "calories": 280,
+    "protein_g": 20,
+    "carbs_g": 36,
+    "fat_g": 6
+  },
+  {
+    "food_name": "Grilled Tandoori Fish",
+    "cuisine": "Indian",
+    "meal_type": "lunch",
+    "serving_size": "180g",
+    "calories": 240,
+    "protein_g": 31,
+    "carbs_g": 3,
+    "fat_g": 9
+  },
+  {
+    "food_name": "Tofu Tikka Masala",
+    "cuisine": "Indian",
+    "meal_type": "lunch",
+    "serving_size": "200g",
+    "calories": 270,
+    "protein_g": 25,
+    "carbs_g": 10,
+    "fat_g": 14
+  },
+  {
+    "food_name": "Kadai Chicken",
+    "cuisine": "Indian",
+    "meal_type": "lunch",
+    "serving_size": "200g",
+    "calories": 310,
+    "protein_g": 32,
+    "carbs_g": 8,
+    "fat_g": 16
+  },
+  {
+    "food_name": "Kala Chana Curry",
+    "cuisine": "Indian",
+    "meal_type": "lunch",
+    "serving_size": "1.5 cups",
+    "calories": 280,
+    "protein_g": 19,
+    "carbs_g": 38,
+    "fat_g": 6
+  },
+  {
+    "food_name": "Paneer Bhurji",
+    "cuisine": "Indian",
+    "meal_type": "lunch",
+    "serving_size": "200g",
+    "calories": 330,
+    "protein_g": 25,
+    "carbs_g": 10,
+    "fat_g": 21
+  },
+  {
+    "food_name": "Chicken Korma",
+    "cuisine": "Indian",
+    "meal_type": "lunch",
+    "serving_size": "200g",
+    "calories": 330,
+    "protein_g": 30,
+    "carbs_g": 8,
+    "fat_g": 18
+  },
+  {
+    "food_name": "Amritsari Fish Fry",
+    "cuisine": "Indian",
+    "meal_type": "lunch",
+    "serving_size": "180g",
+    "calories": 300,
+    "protein_g": 26,
+    "carbs_g": 10,
+    "fat_g": 16
+  },
+  {
+    "food_name": "Butter Chicken (Lean version)",
+    "cuisine": "Indian",
+    "meal_type": "lunch",
+    "serving_size": "200g",
+    "calories": 350,
+    "protein_g": 32,
+    "carbs_g": 10,
+    "fat_g": 20
+  },
+  {
+    "food_name": "Chicken Tikka Skewers",
+    "cuisine": "Indian",
+    "meal_type": "snack",
+    "serving_size": "180g",
+    "calories": 260,
+    "protein_g": 32,
+    "carbs_g": 4,
+    "fat_g": 12
+  },
+  {
+    "food_name": "Paneer Tikka Cubes",
+    "cuisine": "Indian",
+    "meal_type": "snack",
+    "serving_size": "150g",
+    "calories": 290,
+    "protein_g": 22,
+    "carbs_g": 10,
+    "fat_g": 18
+  },
+  {
+    "food_name": "Egg White Omelette with Veggies",
+    "cuisine": "Indian",
+    "meal_type": "snack",
+    "serving_size": "3 egg whites + veggies",
+    "calories": 150,
+    "protein_g": 18,
+    "carbs_g": 6,
+    "fat_g": 4
+  },
+  {
+    "food_name": "Soya Chunk Tikka",
+    "cuisine": "Indian",
+    "meal_type": "snack",
+    "serving_size": "150g",
+    "calories": 230,
+    "protein_g": 24,
+    "carbs_g": 14,
+    "fat_g": 7
+  },
+  {
+    "food_name": "Masala Egg (3 boiled eggs)",
+    "cuisine": "Indian",
+    "meal_type": "snack",
+    "serving_size": "3 eggs",
+    "calories": 240,
+    "protein_g": 21,
+    "carbs_g": 3,
+    "fat_g": 16
+  },
+  {
+    "food_name": "Sprouted Moong Chaat",
+    "cuisine": "Indian",
+    "meal_type": "snack",
+    "serving_size": "1.5 cups",
+    "calories": 220,
+    "protein_g": 18,
+    "carbs_g": 32,
+    "fat_g": 3
+  },
+  {
+    "food_name": "Tofu Masala Bites",
+    "cuisine": "Indian",
+    "meal_type": "snack",
+    "serving_size": "180g",
+    "calories": 240,
+    "protein_g": 22,
+    "carbs_g": 8,
+    "fat_g": 12
+  },
+  {
+    "food_name": "Tandoori Fish Bites",
+    "cuisine": "Indian",
+    "meal_type": "snack",
+    "serving_size": "160g",
+    "calories": 220,
+    "protein_g": 26,
+    "carbs_g": 3,
+    "fat_g": 10
+  },
+  {
+    "food_name": "Spicy Chicken Sausages",
+    "cuisine": "Indian",
+    "meal_type": "snack",
+    "serving_size": "120g",
+    "calories": 230,
+    "protein_g": 20,
+    "carbs_g": 4,
+    "fat_g": 15
+  },
+  {
+    "food_name": "Paneer Bhurji Wrap (Mini)",
+    "cuisine": "Indian",
+    "meal_type": "snack",
+    "serving_size": "1 small wrap",
+    "calories": 260,
+    "protein_g": 20,
+    "carbs_g": 24,
+    "fat_g": 10
+  },
+  {
+    "food_name": "Egg Chicken Seekh Kebabs",
+    "cuisine": "Indian",
+    "meal_type": "snack",
+    "serving_size": "2 kebabs",
+    "calories": 250,
+    "protein_g": 24,
+    "carbs_g": 6,
+    "fat_g": 12
+  },
+  {
+    "food_name": "Chana Chaat with Boiled Eggs",
+    "cuisine": "Indian",
+    "meal_type": "snack",
+    "serving_size": "1.5 cups",
+    "calories": 290,
+    "protein_g": 20,
+    "carbs_g": 38,
+    "fat_g": 6
+  },
+  {
+    "food_name": "Grilled Paneer Sandwich (Whole Wheat)",
+    "cuisine": "Indian",
+    "meal_type": "snack",
+    "serving_size": "1 sandwich",
+    "calories": 300,
+    "protein_g": 20,
+    "carbs_g": 34,
+    "fat_g": 10
+  },
+  {
+    "food_name": "Spicy Peanut & Sprout Mix",
+    "cuisine": "Indian",
+    "meal_type": "snack",
+    "serving_size": "1 cup",
+    "calories": 260,
+    "protein_g": 18,
+    "carbs_g": 20,
+    "fat_g": 12
+  },
+  {
+    "food_name": "Chicken 65 (Grilled Version)",
+    "cuisine": "Indian",
+    "meal_type": "snack",
+    "serving_size": "180g",
+    "calories": 280,
+    "protein_g": 30,
+    "carbs_g": 6,
+    "fat_g": 12
+  },
+  {
+    "food_name": "Egg Paneer Stuffed Paratha (Mini)",
+    "cuisine": "Indian",
+    "meal_type": "snack",
+    "serving_size": "1 small",
+    "calories": 310,
+    "protein_g": 20,
+    "carbs_g": 32,
+    "fat_g": 12
+  },
+  {
+    "food_name": "Dal & Oats Cutlets",
+    "cuisine": "Indian",
+    "meal_type": "snack",
+    "serving_size": "3 small cutlets",
+    "calories": 260,
+    "protein_g": 18,
+    "carbs_g": 30,
+    "fat_g": 6
+  },
+  {
+    "food_name": "Pepper Chicken Strips",
+    "cuisine": "Indian",
+    "meal_type": "snack",
+    "serving_size": "160g",
+    "calories": 250,
+    "protein_g": 28,
+    "carbs_g": 3,
+    "fat_g": 12
+  },
+  {
+    "food_name": "Moong Dal Pancakes (Pudla)",
+    "cuisine": "Indian",
+    "meal_type": "snack",
+    "serving_size": "3 small pancakes",
+    "calories": 280,
+    "protein_g": 20,
+    "carbs_g": 32,
+    "fat_g": 8
+  },
+  {
+    "food_name": "Greek Yogurt Paneer Dip with Veggies",
+    "cuisine": "Indian",
+    "meal_type": "snack",
+    "serving_size": "200g",
+    "calories": 220,
+    "protein_g": 19,
+    "carbs_g": 10,
+    "fat_g": 11
+  },
+  {
+    "food_name": "Masala Tofu Scramble",
+    "cuisine": "Indian",
+    "meal_type": "snack",
+    "serving_size": "200g",
+    "calories": 240,
+    "protein_g": 22,
+    "carbs_g": 8,
+    "fat_g": 12
+  },
+  {
+    "food_name": "Spicy Boiled Egg Salad",
+    "cuisine": "Indian",
+    "meal_type": "snack",
+    "serving_size": "3 eggs + veggies",
+    "calories": 260,
+    "protein_g": 23,
+    "carbs_g": 7,
+    "fat_g": 16
+  },
+  {
+    "food_name": "Tawa Fish Fillet",
+    "cuisine": "Indian",
+    "meal_type": "snack",
+    "serving_size": "180g",
+    "calories": 240,
+    "protein_g": 30,
+    "carbs_g": 3,
+    "fat_g": 10
+  },
+  {
+    "food_name": "Chole with Paneer Cubes",
+    "cuisine": "Indian",
+    "meal_type": "snack",
+    "serving_size": "1 cup",
+    "calories": 300,
+    "protein_g": 22,
+    "carbs_g": 34,
+    "fat_g": 10
+  },
+  {
+    "food_name": "Air-Fried Chicken Pakora",
+    "cuisine": "Indian",
+    "meal_type": "snack",
+    "serving_size": "150g",
+    "calories": 260,
+    "protein_g": 26,
+    "carbs_g": 10,
+    "fat_g": 12
+  }
+]

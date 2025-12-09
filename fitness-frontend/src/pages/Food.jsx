@@ -27,23 +27,23 @@ export default function Food() {
       const res = await axios.get(`${API_URL}/calories/view`, {
         params: { user_id: user_id, date: selectedDate },
       });
-
+        console.log(res.data.calorie_data?.summary )
       setEntries(res.data.calorie_data?.plan_data || []);
     } catch (err) {
       console.error("Fetch error", err);
     }
   };
 
-  const fetchMacroTargets = async () => {
+  const fetchMacroTargets = async (date) => {
     try {
       if (!user_id) return;
-      const res = await fetchUserMacros(user_id);
+      const res = await fetchUserMacros(user_id,date);
       const m = res.user_data;
       setMacroTargets({
         calories: m.Goal_Calories || 2000,
-        protein: m.Macros?.Protein_g || 150,
-        fat: m.Macros?.Fats_g || 65,
-        carbs: m.Macros?.Carbs_g || 200,
+        protein: m.Protein_g || 150,
+        fat: m.Fats_g || 65,
+        carbs: m.Carbs_g || 200,
       });
     } catch (err) {
       console.error("Fetch macros error", err);
@@ -52,7 +52,7 @@ export default function Food() {
 
   useEffect(() => {
     fetchEntries(date);
-    fetchMacroTargets();
+    fetchMacroTargets(date);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date, user_id]);
 

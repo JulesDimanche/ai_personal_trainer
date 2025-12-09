@@ -11,9 +11,9 @@ export const fetchUserProfile = async (userId) => {
   return res.data;
 };
 
-export const fetchUserMacros = async (userId) => {
+export const fetchUserMacros = async (userId,date) => {
         const token = localStorage.getItem("token");
-  const res = await axios.get(`${API_BASE}/macros/view?user_id=${userId}`
+  const res = await axios.get(`${API_BASE}/macros/view?user_id=${userId}&date=${date}`
     ,
      {
     headers: { Authorization: `Bearer ${token}` },}

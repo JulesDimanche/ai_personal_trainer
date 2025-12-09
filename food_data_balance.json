@@ -1,0 +1,252 @@
+[
+  {
+    "food_name": "Moong Dal Dosa",
+    "cuisine": "South Indian",
+    "meal_type": "breakfast",
+    "serving_size": "1 large dosa",
+    "calories": 260,
+    "protein_g": 14,
+    "carbs_g": 36,
+    "fat_g": 6
+  },
+  {
+    "food_name": "Paneer Stuffed Dosa",
+    "cuisine": "South Indian",
+    "meal_type": "breakfast",
+    "serving_size": "1 medium stuffed dosa",
+    "calories": 350,
+    "protein_g": 18,
+    "carbs_g": 42,
+    "fat_g": 12
+  },
+  {
+    "food_name": "Pesarattu with Upma",
+    "cuisine": "South Indian",
+    "meal_type": "breakfast",
+    "serving_size": "1 pesarattu with 1/2 cup upma",
+    "calories": 320,
+    "protein_g": 15,
+    "carbs_g": 45,
+    "fat_g": 8
+  },
+  {
+    "food_name": "Sambar Idli (Lentil Rich)",
+    "cuisine": "South Indian",
+    "meal_type": "breakfast",
+    "serving_size": "2 idlis with 1 cup sambar",
+    "calories": 260,
+    "protein_g": 13,
+    "carbs_g": 42,
+    "fat_g": 4
+  },
+  {
+    "food_name": "Vegetable Ragi Uttapam",
+    "cuisine": "South Indian",
+    "meal_type": "breakfast",
+    "serving_size": "1 medium uttapam",
+    "calories": 300,
+    "protein_g": 12,
+    "carbs_g": 44,
+    "fat_g": 8
+  },
+  {
+    "food_name": "Sprouts Upma",
+    "cuisine": "South Indian",
+    "meal_type": "breakfast",
+    "serving_size": "1 cup",
+    "calories": 280,
+    "protein_g": 14,
+    "carbs_g": 40,
+    "fat_g": 8
+  },
+  {
+    "food_name": "Egg Dosa",
+    "cuisine": "South Indian",
+    "meal_type": "breakfast",
+    "serving_size": "1 dosa with egg",
+    "calories": 300,
+    "protein_g": 17,
+    "carbs_g": 34,
+    "fat_g": 10
+  },
+  {
+    "food_name": "Millet Idli with Peanut Chutney",
+    "cuisine": "South Indian",
+    "meal_type": "breakfast",
+    "serving_size": "3 small idlis with chutney",
+    "calories": 310,
+    "protein_g": 14,
+    "carbs_g": 42,
+    "fat_g": 9
+  },
+  {
+    "food_name": "Paneer Paniyaram",
+    "cuisine": "South Indian",
+    "meal_type": "breakfast",
+    "serving_size": "6 pieces",
+    "calories": 330,
+    "protein_g": 17,
+    "carbs_g": 34,
+    "fat_g": 12
+  },
+  {
+    "food_name": "Soybean Uttapam",
+    "cuisine": "South Indian",
+    "meal_type": "breakfast",
+    "serving_size": "1 large uttapam",
+    "calories": 310,
+    "protein_g": 18,
+    "carbs_g": 40,
+    "fat_g": 9
+  },
+  {
+    "food_name": "Tofu Stuffed Dosa",
+    "cuisine": "South Indian",
+    "meal_type": "breakfast",
+    "serving_size": "1 dosa",
+    "calories": 330,
+    "protein_g": 20,
+    "carbs_g": 38,
+    "fat_g": 10
+  },
+  {
+    "food_name": "Chicken Keema Dosa",
+    "cuisine": "South Indian",
+    "meal_type": "breakfast",
+    "serving_size": "1 stuffed dosa",
+    "calories": 360,
+    "protein_g": 24,
+    "carbs_g": 38,
+    "fat_g": 12
+  },
+  {
+    "food_name": "Curd Rice with Sprouted Moong",
+    "cuisine": "South Indian",
+    "meal_type": "breakfast",
+    "serving_size": "1 cup",
+    "calories": 270,
+    "protein_g": 12,
+    "carbs_g": 36,
+    "fat_g": 8
+  },
+  {
+    "food_name": "Chickpea Sundal with Coconut",
+    "cuisine": "South Indian",
+    "meal_type": "breakfast",
+    "serving_size": "1 bowl",
+    "calories": 280,
+    "protein_g": 14,
+    "carbs_g": 32,
+    "fat_g": 10
+  },
+  {
+    "food_name": "Dal Adai with Chutney",
+    "cuisine": "South Indian",
+    "meal_type": "breakfast",
+    "serving_size": "1 adai",
+    "calories": 290,
+    "protein_g": 14,
+    "carbs_g": 36,
+    "fat_g": 8
+  },
+  {
+    "food_name": "Ragi Egg Appam",
+    "cuisine": "South Indian",
+    "meal_type": "breakfast",
+    "serving_size": "2 appams",
+    "calories": 300,
+    "protein_g": 16,
+    "carbs_g": 38,
+    "fat_g": 9
+  },
+  {
+    "food_name": "Sambar with Moong Dal Idiyappam",
+    "cuisine": "South Indian",
+    "meal_type": "breakfast",
+    "serving_size": "2 idiyappams with 1 cup sambar",
+    "calories": 280,
+    "protein_g": 13,
+    "carbs_g": 44,
+    "fat_g": 4
+  },
+  {
+    "food_name": "Lentil Rich Pongal",
+    "cuisine": "South Indian",
+    "meal_type": "breakfast",
+    "serving_size": "1 bowl",
+    "calories": 330,
+    "protein_g": 12,
+    "carbs_g": 44,
+    "fat_g": 10
+  },
+  {
+    "food_name": "Egg Paniyaram",
+    "cuisine": "South Indian",
+    "meal_type": "breakfast",
+    "serving_size": "6 pieces",
+    "calories": 320,
+    "protein_g": 20,
+    "carbs_g": 28,
+    "fat_g": 12
+  },
+  {
+    "food_name": "Sprouted Ragi Dosa",
+    "cuisine": "South Indian",
+    "meal_type": "breakfast",
+    "serving_size": "1 dosa",
+    "calories": 250,
+    "protein_g": 13,
+    "carbs_g": 34,
+    "fat_g": 7
+  },
+  {
+    "food_name": "Mixed Dal Dosa with Sambar",
+    "cuisine": "South Indian",
+    "meal_type": "breakfast",
+    "serving_size": "1 dosa with 1/2 cup sambar",
+    "calories": 300,
+    "protein_g": 16,
+    "carbs_g": 40,
+    "fat_g": 8
+  },
+  {
+    "food_name": "Idli with Paneer Bhurji",
+    "cuisine": "South Indian",
+    "meal_type": "breakfast",
+    "serving_size": "2 idlis with 1/3 cup paneer bhurji",
+    "calories": 300,
+    "protein_g": 18,
+    "carbs_g": 34,
+    "fat_g": 10
+  },
+  {
+    "food_name": "Vegetable Egg Upma",
+    "cuisine": "South Indian",
+    "meal_type": "breakfast",
+    "serving_size": "1 cup",
+    "calories": 310,
+    "protein_g": 15,
+    "carbs_g": 40,
+    "fat_g": 10
+  },
+  {
+    "food_name": "Tofu Upma",
+    "cuisine": "South Indian",
+    "meal_type": "breakfast",
+    "serving_size": "1 cup",
+    "calories": 280,
+    "protein_g": 17,
+    "carbs_g": 34,
+    "fat_g": 9
+  },
+  {
+    "food_name": "Peanut Rava Dosa",
+    "cuisine": "South Indian",
+    "meal_type": "breakfast",
+    "serving_size": "1 dosa",
+    "calories": 320,
+    "protein_g": 14,
+    "carbs_g": 42,
+    "fat_g": 11
+  }]
+  

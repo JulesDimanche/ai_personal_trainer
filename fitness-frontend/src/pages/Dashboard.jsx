@@ -24,7 +24,7 @@ export default function Dashboard() {
         const [foodRes, workoutRes, macrosRes] = await Promise.all([
           fetchFoodSummary(userId, today),
           fetchWorkoutSummary(userId, today),
-          fetchUserMacros(userId)
+          fetchUserMacros(userId,today)
         ]);
 
         const f = foodRes.calorie_data?.summary || {};
@@ -138,8 +138,8 @@ export default function Dashboard() {
         <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
 
         <div className="grid grid-cols-2 gap-3">
-          <Button className="rounded-xl bg-neutral-800 hover:bg-neutral-700" onClick={() => navigate("/food-entry")}>Add Food</Button>
-          <Button className="rounded-xl bg-neutral-800 hover:bg-neutral-700" onClick={() => navigate("/workouts")}>Workout Plan</Button>
+          <Button className="rounded-xl bg-neutral-800 hover:bg-neutral-700" onClick={() => navigate("/food_suggest")}>Food Suggestion</Button>
+          <Button className="rounded-xl bg-neutral-800 hover:bg-neutral-700" onClick={() => navigate("/workout")}>Workout Plan</Button>
           <Button className="rounded-xl bg-neutral-800 hover:bg-neutral-700" onClick={() => navigate("/planner")}>Macros</Button>
           <Button className="rounded-xl bg-neutral-800 hover:bg-neutral-700" onClick={() => navigate("/progress")}>Log Weight</Button>
         </div>

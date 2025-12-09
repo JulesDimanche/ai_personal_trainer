@@ -8,8 +8,9 @@ import Workout from "./pages/Workout";
 import Chat from "./pages/Chat";
 import Profile from "./pages/Profile";
 import ProtectedRoute from "./components/ProtectedRoute";
-import Planner from "./pages/planner";
+import Planner from "./pages/Planner";
 import Progress from "./pages/Progress";
+import Foodsuggest from "./pages/Foodsuggest";
 
 export default function App() {
   return (
@@ -51,6 +52,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <Food />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/food_suggest"
+          element={
+            <ProtectedRoute>
+              <Foodsuggest />
             </ProtectedRoute>
           }
         />

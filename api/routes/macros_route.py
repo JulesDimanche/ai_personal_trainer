@@ -18,9 +18,9 @@ async def create_or_update_macro(payload: MacroRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Unexpected error: {e}")
 @router.get("/view")
-async def view_user_macros(user_id):
+async def view_user_macros(user_id,date):
     try:
-        user_data = view_macros(user_id)
+        user_data = view_macros(user_id,date)
         return {"success": True, "user_data": user_data}
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve))
