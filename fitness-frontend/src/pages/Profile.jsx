@@ -6,6 +6,7 @@ import { Avatar } from "@/components/ui/avatar";
 import {
   fetchUserProfile,
   fetchUserMacros,
+  fetchUserMacrosFull,
   fetchWorkoutSummary,
   fetchFoodSummary,
 } from "@/lib/api";
@@ -28,9 +29,10 @@ export default function ProfilePage() {
     if (!userId) return;
     const fetchData = async () => {
       try {
-        const [userData, macrosData, workoutData, foodData] = await Promise.all([
+        const [userData, macrosData, macrosDataFull,workoutData, foodData] = await Promise.all([
           fetchUserProfile(userId),
-          fetchUserMacros(userId),
+          fetchUserMacros(userId,today),
+          fetchUserMacrosFull(userId),
           fetchWorkoutSummary(userId, today),
           fetchFoodSummary(userId, today),
         ]);
@@ -49,22 +51,23 @@ export default function ProfilePage() {
         });
 
         const m = macrosData.user_data;
+        const mf=macrosDataFull.user_data
         setMacros({
-          bmr: m.BMR,
-          tdee: m.TDEE,
+          bmr: mf.BMR,
+          tdee: mf.TDEE,
           goalCalories: m.Goal_Calories,
-          protein: m.Macros?.Protein_g,
-          fat: m.Macros?.Fats_g,
-          carbs: m.Macros?.Carbs_g,
-          fiber: m.Macros?.Fiber_g,
-          goalType: m.goal_type,
-          totalWeeks: m.total_weeks,
-          startWeight: m.start_weight_kg,
-          targetWeight: m.target_weight_kg,
-          targetChange: m.Target_Change,
-          weeklyPlan: m.Weekly_Plan,
-          createdAt: m.created_at,
-          updatedAt: m.updated_at,
+          protein: m.Protein_g,
+          fat: m.Fats_g,
+          carbs: m.Carbs_g,
+          fiber: m.Fiber_g,
+          goalType: mf.goal_type,
+          totalWeeks: mf.total_weeks,
+          startWeight: mf.start_weight_kg,
+          targetWeight: mf.target_weight_kg,
+          targetChange: mf.Target_Change,
+          weeklyPlan: mf.Weekly_Plan,
+          createdAt: mf.created_at,
+          updatedAt: mf.updated_at,
         });
 
         const w = workoutData.workout_data?.summary || {};
@@ -77,6 +80,7 @@ export default function ProfilePage() {
         });
 
         const f = foodData.calorie_data?.summary || {};
+        console.log(f)
         setFoodSummary({
           totalCalories: f.total_calories || 0,
           totalItems: f.total_items || 0,

@@ -1,5 +1,5 @@
 // FOOD PAGE - Aesthetic Dark Mode Version (JSX)
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -27,7 +27,7 @@ export default function Food() {
       const res = await axios.get(`${API_URL}/calories/view`, {
         params: { user_id: user_id, date: selectedDate },
       });
-        console.log(res.data.calorie_data?.summary )
+      console.log(res.data.calorie_data?.summary)
       setEntries(res.data.calorie_data?.plan_data || []);
     } catch (err) {
       console.error("Fetch error", err);
@@ -37,7 +37,7 @@ export default function Food() {
   const fetchMacroTargets = async (date) => {
     try {
       if (!user_id) return;
-      const res = await fetchUserMacros(user_id,date);
+      const res = await fetchUserMacros(user_id, date);
       const m = res.user_data;
       setMacroTargets({
         calories: m.Goal_Calories || 2000,
@@ -107,7 +107,7 @@ export default function Food() {
       });
 
       const result = await res.json();
-      
+
       if (result.status === "success" || res.ok) {
         await fetchEntries(date);
       } else {
@@ -131,6 +131,7 @@ export default function Food() {
     },
     { calories: 0, protein: 0, fat: 0, carbs: 0 }
   );
+
 
   // Macro Donut Chart Component
   const MacroDonutChart = ({ current, target, label, color, unit = "" }) => {
@@ -183,202 +184,208 @@ export default function Food() {
   return (
     <div className="min-h-screen bg-neutral-950 text-white">
       <NavBar />
-      <div className="flex flex-col h-[calc(100vh-4rem)] p-4 gap-4">
-      {/* Date Picker */}
-      <div className="w-full flex justify-center mt-2">
-        <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              className={`bg-neutral-900 text-white border-neutral-700 px-4 py-3 rounded-xl hover:bg-neutral-800 ${
-                date !== dayjs().format("YYYY-MM-DD") ? "opacity-60" : ""
-              }`}
-            >
-              📅 {dayjs(date).format("DD MMM YYYY")}
-            </Button>
-          </PopoverTrigger>
-
-          <PopoverContent className="p-2 bg-neutral-900 border-neutral-700 text-white rounded-xl">
-            <Calendar
-              mode="single"
-              selected={new Date(date)}
-              onSelect={(d) => {
-                if (d) {
-                  setDate(dayjs(d).format("YYYY-MM-DD"));
-                  setCalendarOpen(false);
-                }
-              }}
-              className="rounded-xl"
-            />
-          </PopoverContent>
-        </Popover>
-      </div>
-
-      {/* Error Display */}
-      {error && (
-        <div className="w-full max-w-2xl mx-auto p-3 bg-red-900/20 border border-red-700 rounded-xl text-red-400 text-sm text-center">
-          {error}
-        </div>
-      )}
-
-      {/* Macros Progress Donut Charts */}
-      {macroTargets && (
-        <div className="w-full flex justify-center">
-          <div className="grid grid-cols-4 gap-4 p-4 bg-neutral-900 rounded-2xl border border-neutral-800 max-w-2xl">
-            <MacroDonutChart
-              current={dailyTotals.calories}
-              target={macroTargets.calories}
-              label="Calories"
-              color="#3b82f6"
-              unit=" kcal"
-            />
-            <MacroDonutChart
-              current={dailyTotals.protein}
-              target={macroTargets.protein}
-              label="Protein"
-              color="#10b981"
-              unit="g"
-            />
-            <MacroDonutChart
-              current={dailyTotals.fat}
-              target={macroTargets.fat}
-              label="Fat"
-              color="#f59e0b"
-              unit="g"
-            />
-            <MacroDonutChart
-              current={dailyTotals.carbs}
-              target={macroTargets.carbs}
-              label="Carbs"
-              color="#8b5cf6"
-              unit="g"
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Entries Section */}
-      <div className="flex-1 overflow-y-auto grid gap-4 p-2 mt-2">
-  {entries.length === 0 ? (
-    <p className="text-center text-neutral-500">No entries for this date.</p>
-  ) : (
-    entries.map((meal, idx) => (
-      <motion.div
-        key={idx}
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800 shadow hover:shadow-lg transition-all"
-      >
-        {/* HEADER */}
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-lg font-semibold capitalize text-blue-400">
-            {meal.meal_type}
-          </p>
-          <span className="text-sm font-semibold text-white">
-            ({Math.round(meal.meal_summary?.total_calories || 0)} kcal)
-          </span>
-        </div>
-
-        {/* ITEM LIST */}
-        <div className="space-y-3 mb-4">
-          {meal.items.map((food, fIdx) => {
-            const totalMacros = (food.proteins || 0) + (food.fats || 0) + (food.carbs || 0);
-            const proteinPercent = totalMacros > 0 ? ((food.proteins || 0) / totalMacros) * 100 : 0;
-            const fatPercent = totalMacros > 0 ? ((food.fats || 0) / totalMacros) * 100 : 0;
-            const carbsPercent = totalMacros > 0 ? ((food.carbs || 0) / totalMacros) * 100 : 0;
-
-            return (
-              <div
-                key={fIdx}
-                className="group relative flex justify-between items-center bg-neutral-800 p-3 rounded-xl hover:bg-neutral-700 transition-colors"
+      <div className="flex flex-col p-4 gap-4">
+        {/* Date Picker */}
+        <div className="w-full flex justify-center mt-2">
+          <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={`bg-neutral-900 text-white border-neutral-700 px-4 py-3 rounded-xl hover:bg-neutral-800 ${date !== dayjs().format("YYYY-MM-DD") ? "opacity-60" : ""
+                  }`}
               >
-                <div className="flex flex-col flex-1">
-                  <span className="font-medium text-white text-sm">{food.food}</span>
-                  {/* Macro Bar - shown on hover */}
-                  {totalMacros > 0 && (
-                    <div className="mt-1.5 h-1.5 w-full bg-neutral-700 rounded-full overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                      <div className="h-full flex">
-                        {proteinPercent > 0 && (
-                          <div
-                            className="bg-green-500 transition-all"
-                            style={{ width: `${proteinPercent}%` }}
-                          />
-                        )}
-                        {fatPercent > 0 && (
-                          <div
-                            className="bg-amber-500 transition-all"
-                            style={{ width: `${fatPercent}%` }}
-                          />
-                        )}
-                        {carbsPercent > 0 && (
-                          <div
-                            className="bg-purple-500 transition-all"
-                            style={{ width: `${carbsPercent}%` }}
-                          />
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-white font-bold text-sm">
-                    {Math.round(food.calories || 0)} kcal
+                📅 {dayjs(date).format("DD MMM YYYY")}
+              </Button>
+            </PopoverTrigger>
+
+            <PopoverContent className="p-2 bg-neutral-900 border-neutral-700 text-white rounded-xl">
+              <Calendar
+                mode="single"
+                selected={new Date(date)}
+                onSelect={(d) => {
+                  if (d) {
+                    setDate(dayjs(d).format("YYYY-MM-DD"));
+                    setCalendarOpen(false);
+                  }
+                }}
+                className="rounded-xl"
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
+
+        {/* Error Display */}
+        {error && (
+          <div className="w-full max-w-2xl mx-auto p-3 bg-red-900/20 border border-red-700 rounded-xl text-red-400 text-sm text-center">
+            {error}
+          </div>
+        )}
+
+        {/* Macros Progress Donut Charts */}
+        {macroTargets && (
+          <div className="w-full flex justify-center">
+            <div className="grid grid-cols-4 gap-4 p-4 bg-neutral-900 rounded-2xl border border-neutral-800 max-w-2xl">
+              <MacroDonutChart
+                current={dailyTotals.calories}
+                target={macroTargets.calories}
+                label="Calories"
+                color="#3b82f6"
+                unit=" kcal"
+              />
+              <MacroDonutChart
+                current={dailyTotals.protein}
+                target={macroTargets.protein}
+                label="Protein"
+                color="#10b981"
+                unit="g"
+              />
+              <MacroDonutChart
+                current={dailyTotals.fat}
+                target={macroTargets.fat}
+                label="Fat"
+                color="#f59e0b"
+                unit="g"
+              />
+              <MacroDonutChart
+                current={dailyTotals.carbs}
+                target={macroTargets.carbs}
+                label="Carbs"
+                color="#8b5cf6"
+                unit="g"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Entries Section */}
+        <div className="grid gap-4 p-2 mt-2">
+          {entries.length === 0 ? (
+            <p className="text-center text-neutral-500">No entries for this date.</p>
+          ) : (
+            entries.map((meal, idx) => (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800 shadow hover:shadow-lg transition-all"
+              >
+                {/* HEADER */}
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-lg font-semibold capitalize text-blue-400">
+                    {meal.meal_type}
+                  </p>
+                  <span className="text-sm font-semibold text-white">
+                    ({Math.round(meal.meal_summary?.total_calories || 0)} kcal)
                   </span>
-                  <button
-                    onClick={() => handleDeleteFood(meal.meal_type, food.food)}
-                    className="px-2 py-1 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs transition-colors"
-                    title="Delete food item"
-                  >
-                    🗑️
-                  </button>
                 </div>
-              </div>
-            );
-          })}
+
+                {/* ITEM LIST */}
+                <div className="space-y-3 mb-4">
+                  {meal.items.map((food, fIdx) => {
+                    const totalMacros = (food.proteins || 0) + (food.fats || 0) + (food.carbs || 0);
+                    const proteinPercent = totalMacros > 0 ? ((food.proteins || 0) / totalMacros) * 100 : 0;
+                    const fatPercent = totalMacros > 0 ? ((food.fats || 0) / totalMacros) * 100 : 0;
+                    const carbsPercent = totalMacros > 0 ? ((food.carbs || 0) / totalMacros) * 100 : 0;
+
+                    return (
+                      <div
+                        key={fIdx}
+                        className="group relative flex justify-between items-center bg-neutral-800 p-3 rounded-xl hover:bg-neutral-700 transition-colors"
+                      >
+                        <div className="flex flex-col flex-1">
+                          <span className="font-medium text-white text-sm">{food.food}</span>
+                          {/* Macro Bar - shown on hover */}
+                          {totalMacros > 0 && (
+                            <div className="mt-1.5 h-1.5 w-full bg-neutral-700 rounded-full overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                              <div className="h-full flex">
+                                {proteinPercent > 0 && (
+                                  <div
+                                    className="bg-green-500 transition-all"
+                                    style={{ width: `${proteinPercent}%` }}
+                                  />
+                                )}
+                                {fatPercent > 0 && (
+                                  <div
+                                    className="bg-amber-500 transition-all"
+                                    style={{ width: `${fatPercent}%` }}
+                                  />
+                                )}
+                                {carbsPercent > 0 && (
+                                  <div
+                                    className="bg-purple-500 transition-all"
+                                    style={{ width: `${carbsPercent}%` }}
+                                  />
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-white font-bold text-sm">
+                            {Math.round(food.calories || 0)} kcal
+                          </span>
+                          <button
+                            onClick={() => handleDeleteFood(meal.meal_type, food.food)}
+                            className="px-2 py-1 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs transition-colors"
+                            title="Delete food item"
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* MACROS BOX */}
+                <div className="grid grid-cols-5 gap-2 text-center bg-neutral-800 p-3 rounded-xl">
+                  <div>
+                    <p className="font-semibold text-white text-sm">{meal.meal_summary.total_calories}</p>
+                    <p className="text-xs text-neutral-400">Cal</p>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-white text-sm">{meal.meal_summary.total_protein}</p>
+                    <p className="text-xs text-neutral-400">Protein</p>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-white text-sm">{meal.meal_summary.total_fat}</p>
+                    <p className="text-xs text-neutral-400">Fat</p>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-white text-sm">{meal.meal_summary.total_carb}</p>
+                    <p className="text-xs text-neutral-400">Carbs</p>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-white text-sm">{meal.meal_summary.total_fiber}</p>
+                    <p className="text-xs text-neutral-400">Fiber</p>
+                  </div>
+                </div>
+              </motion.div>
+            ))
+          )}
         </div>
 
-        {/* MACROS BOX */}
-        <div className="grid grid-cols-5 gap-2 text-center bg-neutral-800 p-3 rounded-xl">
-          <div>
-            <p className="font-semibold text-white text-sm">{meal.meal_summary.total_calories}</p>
-            <p className="text-xs text-neutral-400">Cal</p>
-          </div>
-          <div>
-            <p className="font-semibold text-white text-sm">{meal.meal_summary.total_protein}</p>
-            <p className="text-xs text-neutral-400">Protein</p>
-          </div>
-          <div>
-            <p className="font-semibold text-white text-sm">{meal.meal_summary.total_fat}</p>
-            <p className="text-xs text-neutral-400">Fat</p>
-          </div>
-          <div>
-            <p className="font-semibold text-white text-sm">{meal.meal_summary.total_carb}</p>
-            <p className="text-xs text-neutral-400">Carbs</p>
-          </div>
-          <div>
-            <p className="font-semibold text-white text-sm">{meal.meal_summary.total_fiber}</p>
-            <p className="text-xs text-neutral-400">Fiber</p>
-          </div>
+        {/* Chat Input */}
+        <div className="w-full flex gap-2 p-3 border-t border-neutral-800 bg-neutral-900 rounded-t-2xl">
+          <><input
+            type="text"
+            placeholder="Enter your meal in natural language..."
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleSubmit();
+                setText("");
+              }
+            }}
+            className="flex-1 bg-neutral-800 border border-neutral-700 rounded-xl p-3 text-white placeholder-neutral-500" /><button
+              onClick={handleSubmit}
+              className="px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-md"
+            >
+              Add
+            </button></>
         </div>
-      </motion.div>
-    ))
-  )}
-</div>
-
-      {/* Chat Input */}
-      <div className="w-full flex gap-2 p-3 border-t border-neutral-800 bg-neutral-900 rounded-t-2xl">
-        <><input
-          type="text"
-          placeholder="Enter your meal in natural language..."
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          className="flex-1 bg-neutral-800 border border-neutral-700 rounded-xl p-3 text-white placeholder-neutral-500" /><button
-            onClick={handleSubmit}
-            className="px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-md"
-          >
-            Add
-          </button></>
-      </div>
       </div>
     </div>
   );

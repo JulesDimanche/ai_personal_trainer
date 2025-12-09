@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from api.models.macros_model import MacroRequest
-from api.services.macros_service import generate_and_upsert_macro, view_macros
+from api.services.macros_service import generate_and_upsert_macro, view_macros,view_macros_full
 from api.services.user_service import generate_user_data
 
 router = APIRouter(prefix="/macros", tags=["macros"])
@@ -21,6 +21,17 @@ async def create_or_update_macro(payload: MacroRequest):
 async def view_user_macros(user_id,date):
     try:
         user_data = view_macros(user_id,date)
+        return {"success": True, "user_data": user_data}
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except RuntimeError as re:
+        raise HTTPException(status_code=500, detail=str(re))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {e}")
+@router.get("/view_full")
+async def view_user_macros_full(user_id):
+    try:
+        user_data = view_macros_full(user_id)
         return {"success": True, "user_data": user_data}
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve))

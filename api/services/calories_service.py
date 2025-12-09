@@ -117,9 +117,39 @@ def calculate_calories(calories_payload: Dict[str, Any]) -> Dict[str, Any]:
                     i = idx_map[meal_type]
                     existing_meal = plan_data[i]
                     existing_items = existing_meal.get("items", []) or []
-                    existing_items.extend(new_items)
-                    existing_meal["items"] = existing_items
-                    existing_meal["meal_summary"] = compute_totals_from_items(existing_items)
+                    existing_items = existing_meal.get("items", []) or []
+                    merged = {}
+
+                    for it in existing_items:
+                        key = it["food"].lower()
+                        if key not in merged:
+                            merged[key] = it.copy()
+                        else:
+                            merged[key]["quantity"] += it.get("quantity", 0)
+                            merged[key]["weight"] += it.get("weight", 0)
+                            merged[key]["calories"] += it.get("calories", 0)
+                            merged[key]["proteins"] += it.get("proteins", 0)
+                            merged[key]["fats"] += it.get("fats", 0)
+                            merged[key]["carbs"] += it.get("carbs", 0)
+                            merged[key]["fiber"] += it.get("fiber", 0)
+
+                    for it in new_items:
+                        key = it["food"].lower()
+                        if key not in merged:
+                            merged[key] = it.copy()
+                        else:
+                            merged[key]["quantity"] += it.get("quantity", 0)
+                            merged[key]["weight"] += it.get("weight", 0)
+                            merged[key]["calories"] += it.get("calories", 0)
+                            merged[key]["proteins"] += it.get("proteins", 0)
+                            merged[key]["fats"] += it.get("fats", 0)
+                            merged[key]["carbs"] += it.get("carbs", 0)
+                            merged[key]["fiber"] += it.get("fiber", 0)
+
+                    final_items = list(merged.values())
+                    existing_meal["items"] = final_items
+                    existing_meal["meal_summary"] = compute_totals_from_items(final_items)
+
                     plan_data[i] = existing_meal
                 else:
                     meal_entry = {

@@ -89,3 +89,16 @@ def view_macros(user_id: str,date:str) -> Dict[str, Any]:
             }
 
     raise ValueError(f"Date {date} does not fall into any macro plan range")
+def view_macros_full(user_id: str) -> Dict[str, Any]:
+    if not user_id:
+        raise ValueError("user_id must be provided")
+
+    if macro_collection is None:
+        raise RuntimeError("macro_collection not initialized")
+
+    user_data = macro_collection.find_one({"user_id": user_id}, {"_id": 0})
+
+    if not user_data:
+        raise ValueError(f"No macro plan found for user_id: {user_id}")
+
+    return user_data

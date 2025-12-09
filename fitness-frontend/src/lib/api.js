@@ -20,6 +20,15 @@ export const fetchUserMacros = async (userId,date) => {
   );
   return res.data;
 };
+export const fetchUserMacrosFull = async (userId) => {
+        const token = localStorage.getItem("token");
+  const res = await axios.get(`${API_BASE}/macros/view_full?user_id=${userId}`
+    ,
+     {
+    headers: { Authorization: `Bearer ${token}` },}
+  );
+  return res.data;
+};
 
 export const fetchWorkoutSummary = async (userId,date) => {
         const token = localStorage.getItem("token");
