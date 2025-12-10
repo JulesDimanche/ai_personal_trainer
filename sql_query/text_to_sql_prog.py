@@ -1,115 +1,102 @@
-# text_to_sql_progress.py
 import os
 import re
 import duckdb
-from openai import OpenAI
 from functools import lru_cache
+import sys
+sys.path.append('..')
 from typing import Tuple
-from orchestrator_new import client_deepseek, EXTRA_HEADERS
 
-# --------------------------------------------------------------------
-# API CLIENT CONFIG (OpenRouter + DeepSeek)
-# --------------------------------------------------------------------
-'''client_deepseek = OpenAI(
-    api_key=os.environ.get("DEEPSEEK_API_KEY"),
-    base_url="https://openrouter.ai/api/v1"
-)
+try:
+    from orchestrator_new import client_deepseek, EXTRA_HEADERS
+except Exception:
+    client_deepseek = None
+    EXTRA_HEADERS = {}
 
-
-EXTRA_HEADERS = {
-    "HTTP-Referer": os.environ.get("SITE_URL", "http://localhost"),
-    "X-Title": os.environ.get("SITE_NAME", "Progress SQL Generator")
-}'''
-MODEL_NAME = "x-ai/grok-4.1-fast"
-
+MODEL_NAME = os.getenv("SQL_MODEL_NAME", "x-ai/grok-4.1-fast")
 DUCKDB_PATH = os.getenv("DUCKDB_PATH", "trainer.duckdb")
+MAX_TOKENS = int(os.getenv("SQL_MAX_TOKENS", "512"))
+TEMPERATURE = float(os.getenv("SQL_TEMPERATURE", "0.1"))
+MAX_RETRIES = int(os.getenv("SQL_MAX_RETRIES", "2"))
 
-# --------------------------------------------------------------------
-# SQL SAFETY HELPERS
-# --------------------------------------------------------------------
-FORBIDDEN = ["insert", "update", "delete", "drop", "alter", "create", "attach", "pragma"]
+FORBIDDEN = {"insert", "update", "delete", "drop", "alter", "create", "attach", "pragma", "replace"}
 
 def is_sql_safe(sql: str) -> Tuple[bool, str]:
-    lower = sql.lower()
-    sql_stripped = sql.strip()
-    if sql_stripped.endswith(";"):
-        sql_stripped = sql_stripped[:-1] 
-        sql = sql_stripped
-
-    if ";" in sql_stripped:
-        return False, "Multiple statements or semicolon detected."
+    if not sql:
+        return False, "Empty SQL."
+    sql_strip = sql.strip().rstrip(";")
+    lower = sql_strip.lower()
+    if ";" in sql_strip:
+        return False, "Semicolons / multiple statements detected."
     for bad in FORBIDDEN:
-        if bad in lower:
+        if re.search(r'\b' + re.escape(bad) + r'\b', lower):
             return False, f"Forbidden keyword detected: {bad}"
-    if not re.search(r'^\s*select\s+', lower):
+    if not re.search(r'^\s*select\b', lower, re.IGNORECASE):
         return False, "Only SELECT queries are allowed."
     return True, ""
 
 def inject_user_clause(sql: str, user_id: str) -> str:
+    if not user_id:
+        return sql
     lower = sql.lower()
     if "user_id" in lower:
         return sql
-    match = re.search(r'\b(group by|order by|limit)\b', lower)
-    if match:
-        idx = match.start()
-        return sql[:idx] + f" WHERE user_id = '{user_id}' " + sql[idx:]
+    m = re.search(r'\b(group by|order by|limit)\b', lower)
+    where_clause = f" WHERE user_id = '{user_id}' "
+    if m:
+        idx = m.start()
+        if re.search(r'\bwhere\b', lower):
+            return sql
+        return sql[:idx] + where_clause + sql[idx:]
     else:
-        return sql + f" WHERE user_id = '{user_id}'"
+        if re.search(r'\bwhere\b', lower):
+            return sql + f" AND user_id = '{user_id}'"
+        return sql + where_clause
 
-# --------------------------------------------------------------------
-# PROMPT GENERATION
-# --------------------------------------------------------------------
-def build_schema_prompt(user_id) -> str:
-    return (
-        "### DATABASE SCHEMA ###\n"
-        "Table daily_progress(\n"
-        "  user_id TEXT,\n"
-        "  date DATE,\n"
-        "  goal TEXT,\n"
-        "  achieved_calories DOUBLE,\n"
-        "  achieved_weight_kg DOUBLE,\n"
-        "  achieved_workout_intensity DOUBLE,\n"
-        "  expected_daily_calories DOUBLE,\n"
-        "  expected_target_weight_kg DOUBLE,\n"
-        "  expected_workout_intensity DOUBLE,\n"
-        "  progress_calories DOUBLE,\n"
-        "  progress_protein DOUBLE,\n"
-        "  progress_carbs DOUBLE,\n"
-        "  progress_fats DOUBLE,\n"
-        "  remarks TEXT,\n"
-        "  week_number INTEGER,\n"
-        "  created_at TIMESTAMP,\n"
-        "  updated_at TIMESTAMP\n"
-        ")\n\n"
-        "### TASK ###\n"
-        "You are an expert SQL generator. Produce **one DuckDB-compatible SQL query** that answers the question below.\n"
-        "- Use only SELECT statements (no modifications).\n"
-        f"- Always filter results by the user's ID `user_id = '{user_id}'`.\n"
-        "- Prefer grouping, aggregation, and date-based summaries.\n"
-        "- Output only SQL — no commentary, no markdown.\n"
-        
+def build_system_message(user_id: str) -> str:
+    schema = (
+        "Table daily_progress(user_id,date,goal,"
+        "achieved_calories,achieved_weight_kg,achieved_workout_intensity,"
+        "expected_daily_calories,expected_target_weight_kg,expected_workout_intensity,"
+        "progress_calories,progress_protein,progress_carbs,progress_fats,"
+        "remarks,week_number,created_at,updated_at)"
     )
-
-def build_prompt(user_question: str, user_id: str) -> str:
-    schema = build_schema_prompt(user_id)
-    return (
-        f"{schema}\n"
-        f"### USER QUESTION ###\n{user_question}\n"
-        f"### OUTPUT ###\nSQL Query:\n"
+    rules = (
+        "You are an expert SQL generator (DuckDB). Output ONE valid SELECT query only, no commentary. "
+        "Always ensure results are filtered by user_id = '{uid}'. Prefer grouping, aggregation, date summaries. "
+        "Use DuckDB-compatible SQL. Output only the SQL text (no markdown)."
     )
+    return f"{schema}\n{rules}".replace("{uid}", user_id)
 
-# --------------------------------------------------------------------
-# SQL GENERATION (REMOTE MODEL)
-# --------------------------------------------------------------------
-@lru_cache(maxsize=256)
+def build_user_message(user_question: str) -> str:
+    question = user_question.strip()
+    if not question:
+        question = "Provide a basic SELECT example from daily_progress."
+    return f"Question: {question}"
+
+@lru_cache(maxsize=1024)
 def generate_sql_cached(user_question: str, user_id: str) -> str:
     return generate_sql(user_question, user_id)
 
-def generate_sql(user_question: str, user_id: str, max_retries: int = 2) -> str:
-    prompt = build_prompt(user_question, user_id)
+def _extract_sql_from_model(raw: str) -> str:
+
+    if not raw:
+        return ""
+    raw = re.sub(r"```(?:sql)?", "", raw, flags=re.IGNORECASE).strip()
+    m = re.search(r"(select\b[\s\S]*?)(?=;|\Z)", raw, re.IGNORECASE)
+    sql_candidate = m.group(1).strip() if m else raw.strip()
+    sql_candidate = sql_candidate.strip("`\"' \n;")
+    return sql_candidate
+
+def generate_sql(user_question: str, user_id: str, max_retries: int = MAX_RETRIES) -> str:
+
+    if client_deepseek is None:
+        raise RuntimeError("client_deepseek is not configured. Import or initialize it in orchestrator_new.")
+
+    system_msg = build_system_message(user_id)
+    user_msg = build_user_message(user_question)
+
     attempt = 0
     last_error = None
-    sql_candidate = None
 
     while attempt <= max_retries:
         attempt += 1
@@ -117,37 +104,26 @@ def generate_sql(user_question: str, user_id: str, max_retries: int = 2) -> str:
             response = client_deepseek.chat.completions.create(
                 model=MODEL_NAME,
                 messages=[
-                    {
-                        "role": "system",
-                        "content": "You are an expert SQL generator specialized in DuckDB. Always output valid SQL only."
-                    },
-                    {
-                        "role": "user",
-                        "content": prompt
-                    }
+                    {"role": "system", "content": system_msg},
+                    {"role": "user", "content": user_msg},
                 ],
                 extra_headers=EXTRA_HEADERS,
-                temperature=0.1,
-                max_tokens=512,
+                temperature=TEMPERATURE,
+                max_tokens=MAX_TOKENS,
             )
-            raw = response.choices[0].message.content.strip()
+            raw = ""
+            try:
+                raw = response.choices[0].message.content.strip()
+            except Exception:
+                raw = getattr(response.choices[0].message, "content", "") or str(response.choices[0])
         except Exception as e:
-            last_error = str(e)
+            last_error = f"API error: {e}"
             continue
 
-        # Extract SQL text
-        raw = re.sub(r"```+\s*sql", "", raw, flags=re.IGNORECASE)
-        raw = re.sub(r"```+", "", raw).strip()
-        m = re.search(r"(select[\s\S]*?)(?=;|\Z)", raw, re.IGNORECASE)
-        sql_candidate = m.group(1).strip() if m else raw.strip()
-        sql_candidate = re.sub(r";+", "", sql_candidate).strip()
-        sql_candidate = re.sub(r"^`+|`+$", "", sql_candidate).strip()
+        sql_candidate = _extract_sql_from_model(raw)
 
-        # Safety & user_id injection
-        safe, reason = is_sql_safe(sql_candidate)
-        if not safe:
-            last_error = reason
-            prompt += f"\n\n# Correction needed: previous SQL was unsafe ({reason}). Please fix."
+        if not sql_candidate:
+            last_error = "Model returned empty SQL."
             continue
 
         if "user_id" not in sql_candidate.lower():
@@ -157,23 +133,31 @@ def generate_sql(user_question: str, user_id: str, max_retries: int = 2) -> str:
         if safe:
             return sql_candidate
         else:
-            last_error = reason
+            last_error = f"Unsafe SQL ({reason})."
+            user_msg += f" NOTE: previous output unsafe ({reason}). Please return a safe SELECT only."
 
-    raise ValueError(f"❌ Failed to produce valid SQL: {last_error or 'unknown error'}")
+    raise ValueError(f"Failed to produce valid SQL after {max_retries+1} attempts: {last_error or 'unknown'}")
 
-def execute_sql_on_duckdb(sql: str, duckdb_path: str = DUCKDB_PATH):
+def execute_sql_on_duckdb(sql: str, duckdb_path: str = DUCKDB_PATH, limit: int = 2000):
+
     con = duckdb.connect(duckdb_path)
-    if re.search(r'\blimit\b', sql, flags=re.IGNORECASE) is None:
-        sql_exec = sql + " LIMIT 2000"
-    else:
-        sql_exec = sql
     try:
+        if re.search(r'\blimit\b', sql, flags=re.IGNORECASE) is None:
+            sql_exec = sql.rstrip().rstrip(";") + f" LIMIT {limit}"
+        else:
+            sql_exec = sql
         df = con.execute(sql_exec).df()
         return df
     finally:
         con.close()
-if __name__=="__main__":
-    gen=generate_sql('fetch daily calorie intake data','u001')
-    print('the query is: ',gen)
-    ans=execute_sql_on_duckdb(gen)
-    print('Then ans is: ',ans)
+
+if __name__ == "__main__":
+    test_question = "Total achieved_calories by date for the last 7 days"
+    test_user = os.getenv("TEST_USER_ID", "u001")
+    try:
+        query = generate_sql(test_question, test_user)
+        print("Generated SQL:\n", query)
+        df = execute_sql_on_duckdb(query)
+        print(df.head())
+    except Exception as exc:
+        print("Error:", exc)

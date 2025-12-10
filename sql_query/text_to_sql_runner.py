@@ -1,155 +1,168 @@
 import os
 import re
 import duckdb
-from openai import OpenAI
 from functools import lru_cache
 from typing import Tuple
-from orchestrator_new import client_deepseek,EXTRA_HEADERS
+import sys
+sys.path.append('..')
 
-'''client_deepseek = OpenAI(
-    api_key=os.environ.get("QWEN3_API_KEY"),
-    base_url="https://openrouter.ai/api/v1"
-)
+try:
+    from orchestrator_new import client_deepseek, EXTRA_HEADERS
+except Exception:
+    client_deepseek = None
+    EXTRA_HEADERS = {}
 
-
-EXTRA_HEADERS = {
-    "HTTP-Referer": os.environ.get("SITE_URL", "http://localhost"),
-    "X-Title": os.environ.get("SITE_NAME", "MongoDB Query System")
-}'''
-MODEL_NAME = "x-ai/grok-4.1-fast"
-
+MODEL_NAME = os.getenv("SQL_MODEL_NAME", "x-ai/grok-4.1-fast")
 DUCKDB_PATH = os.getenv("DUCKDB_PATH", "trainer.duckdb")
+TEMPERATURE = float(os.getenv("SQL_TEMPERATURE", "0.1"))
+MAX_TOKENS = int(os.getenv("SQL_MAX_TOKENS", "512"))
+MAX_RETRIES = int(os.getenv("SQL_MAX_RETRIES", "2"))
 
-FORBIDDEN = ["insert", "update", "delete", "drop", "alter", "create", "attach", "pragma"]
+FORBIDDEN = {
+    "insert", "update", "delete", "drop", "alter",
+    "create", "attach", "pragma", "replace"
+}
 
 def is_sql_safe(sql: str) -> Tuple[bool, str]:
-    lower = sql.lower()
-    sql_stripped = sql.strip()
-    if sql_stripped.endswith(";"):
-        sql_stripped = sql_stripped[:-1]
-        sql = sql_stripped
+    if not sql:
+        return False, "Empty SQL."
 
-    if ";" in sql_stripped:
+    stripped = sql.strip().rstrip(";")
+    lower = stripped.lower()
+
+    if ";" in stripped:
         return False, "Multiple statements or semicolon detected."
+
     for bad in FORBIDDEN:
-        if bad in lower:
-            return False, f"Forbidden keyword detected: {bad}"
-    if not re.search(r'^\s*select\s+', lower):
-        return False, "Only SELECT queries are allowed."
+        if re.search(r'\b' + re.escape(bad) + r'\b', lower):
+            return False, f"Forbidden keyword: {bad}"
+
+    if not re.search(r'^\s*select\b', lower):
+        return False, "Only SELECT queries allowed."
+
     return True, ""
 
+
 def inject_user_clause(sql: str, user_id: str) -> str:
+    if not user_id:
+        return sql
+
     lower = sql.lower()
     if "user_id" in lower:
         return sql
+
     match = re.search(r'\b(group by|order by|limit)\b', lower)
     if match:
         idx = match.start()
         return sql[:idx] + f" WHERE user_id = '{user_id}' " + sql[idx:]
-    else:
-        return sql + f" WHERE user_id = '{user_id}'"
 
-def build_schema_prompt(user_id) -> str:
-    return (
-        "### DATABASE SCHEMA ###\n"
-        "Table foods(user_id TEXT, date DATE, meal_type TEXT, food TEXT, quantity REAL, weight REAL, calories REAL, proteins REAL, fats REAL, carbs REAL, fiber REAL, source_row_id TEXT)\n"
-        "Table workouts(user_id TEXT, date DATE, exercise_name TEXT, muscle_group TEXT, sets INT, reps INT, weight REAL, duration_minutes REAL, calories_burned REAL, source_row_id TEXT)\n\n"
-        "### TASK ###\n"
-        "You are an expert SQL generator. Produce **one DuckDB-compatible SQL query** that answers the question below.\n"
-        "- Use only SELECT statements (no modifications).\n"
-        f"- Always filter results by the user's ID `user_id = '{user_id}'`.\n"
-        "- Prefer grouping and aggregation for trends.\n"
-        "- Output only SQL — no commentary, no markdown.\n"
+    if "where" in lower:
+        return sql + f" AND user_id = '{user_id}'"
+    return sql + f" WHERE user_id = '{user_id}'"
+
+def build_system_message(user_id: str) -> str:
+    schema = (
+        "Tables:\n"
+        "foods(user_id,date,meal_type,food,quantity,weight,calories,proteins,fats,carbs,fiber,source_row_id)\n"
+        "workouts(user_id,date,exercise_name,muscle_group,sets,reps,weight,duration_minutes,calories_burned,source_row_id)\n"
     )
 
-def build_prompt(user_question: str, user_id: str) -> str:
-    schema = build_schema_prompt(user_id)
-    return (
-        f"{schema}\n"
-        f"### USER QUESTION ###\n{user_question}\n"
-        f"### OUTPUT ###\nSQL Query:\n"
+    rules = (
+        "You generate ONE valid DuckDB SELECT query. "
+        "No commentary. No markdown. "
+        "Always ensure results are filtered by user_id='{uid}'. "
+        "Prefer aggregation/grouping for trends. "
+        "Return only SQL."
     )
 
-@lru_cache(maxsize=256)
-def generate_sql_cached(user_question: str, user_id: str) -> str:
-    return generate_sql(user_question, user_id)
+    return (schema + rules).replace("{uid}", user_id)
 
-def generate_sql(user_question: str, user_id: str, max_retries: int = 2) -> str:
-    prompt = build_prompt(user_question, user_id)
+
+def build_user_message(question: str) -> str:
+    question = question.strip() or "Provide a sample SELECT query."
+    return f"Question: {question}"
+
+
+def extract_sql(raw: str) -> str:
+    if not raw:
+        return ""
+    raw = re.sub(r"```(?:sql)?", "", raw, flags=re.IGNORECASE).strip()
+    m = re.search(r"(select\b[\s\S]*?)(?=;|\Z)", raw, re.IGNORECASE)
+    sql = m.group(1).strip() if m else raw.strip()
+    return sql.strip(" `\"';")
+
+
+@lru_cache(maxsize=512)
+def generate_sql_cached(question: str, user_id: str) -> str:
+    return generate_sql(question, user_id)
+
+
+def generate_sql(question: str, user_id: str, max_retries: int = MAX_RETRIES) -> str:
+    if client_deepseek is None:
+        raise RuntimeError("client_deepseek is not initialized.")
+
+    system_msg = build_system_message(user_id)
+    user_msg = build_user_message(question)
+
     attempt = 0
     last_error = None
-    sql_candidate = None
 
     while attempt <= max_retries:
         attempt += 1
+
         try:
-            response = client_deepseek.chat.completions.create(
+            resp = client_deepseek.chat.completions.create(
                 model=MODEL_NAME,
                 messages=[
-                    {
-                        "role": "system",
-                        "content": "You are an expert SQL generator specialized in DuckDB. Always output valid SQL only."
-                    },
-                    {
-                        "role": "user",
-                        "content": prompt
-                    }
+                    {"role": "system", "content": system_msg},
+                    {"role": "user", "content": user_msg},
                 ],
                 extra_headers=EXTRA_HEADERS,
-                temperature=0.1,
-                max_tokens=512,
+                temperature=TEMPERATURE,
+                max_tokens=MAX_TOKENS,
             )
-            raw = response.choices[0].message.content.strip()
+            raw = resp.choices[0].message.content.strip()
         except Exception as e:
-            last_error = str(e)
+            last_error = f"API error: {e}"
             continue
 
-        raw = re.sub(r"```+\s*sql", "", raw, flags=re.IGNORECASE)
-        raw = re.sub(r"```+", "", raw).strip()
-        m = re.search(r"(select[\s\S]*?)(?=;|\Z)", raw, re.IGNORECASE)
-        sql_candidate = m.group(1).strip() if m else raw.strip()
-        sql_candidate = re.sub(r";+\s*$", "", sql_candidate).strip()
+        sql = extract_sql(raw)
 
-        sql_candidate = re.sub(r"^`+|`+$", "", sql_candidate).strip()
-
-        safe, reason = is_sql_safe(sql_candidate)
-        if not safe:
-            last_error = reason
-            prompt += f"\n\n# Correction needed: previous SQL was unsafe ({reason}). Please fix."
+        if not sql:
+            last_error = "Empty SQL from model."
             continue
 
-        if "user_id" not in sql_candidate.lower():
-            sql_candidate = inject_user_clause(sql_candidate, user_id)
+        if "user_id" not in sql.lower():
+            sql = inject_user_clause(sql, user_id)
 
-        safe, reason = is_sql_safe(sql_candidate)
+        safe, reason = is_sql_safe(sql)
         if safe:
-            return sql_candidate
-        else:
-            last_error = reason
+            return sql
 
-    raise ValueError(f"❌ Failed to produce valid SQL: {last_error or 'unknown error'}")
+        last_error = reason
+        user_msg += f" NOTE: previous output unsafe ({reason}). Provide a safe SELECT only."
+
+    raise ValueError(f"Failed to generate safe SQL: {last_error or 'unknown error'}")
+
 
 def clean_result(df):
-    columns_to_drop=["source_row_id", "source_doc_id", "created_at", "updated_at"]
-    cols_present=[col for col in columns_to_drop if col in df.columns]
-    if cols_present:
-        df=df.drop(columns=cols_present)
-    return df
+    drop = ["source_row_id", "source_doc_id", "created_at", "updated_at"]
+    return df.drop(columns=[c for c in drop if c in df.columns], errors="ignore")
+
 
 def execute_sql_on_duckdb(sql: str, duckdb_path: str = DUCKDB_PATH):
     con = duckdb.connect(duckdb_path)
-    if re.search(r'\blimit\b', sql, flags=re.IGNORECASE) is None:
-        sql_exec = sql + " LIMIT 2000"
-    else:
-        sql_exec = sql
     try:
-        df = con.execute(sql_exec).df()
-        df= clean_result(df)
-        return df
+        if "limit" not in sql.lower():
+            sql = sql.rstrip(";") + " LIMIT 2000"
+        df = con.execute(sql).df()
+        return clean_result(df)
     finally:
         con.close()
-if __name__=="__main__":
-    gen=generate_sql('chest workout','u001')
-    print('the query is: ',gen)
-    ans=execute_sql_on_duckdb(gen)
-    print('Then ans is: ',ans)
+
+if __name__ == "__main__":
+    q = "show all chest workouts"
+    user = "u001"
+    sql = generate_sql(q, user)
+    print("Generated SQL:", sql)
+    print(execute_sql_on_duckdb(sql))
