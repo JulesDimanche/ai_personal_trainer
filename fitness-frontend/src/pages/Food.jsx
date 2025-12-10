@@ -9,8 +9,10 @@ import axios from "axios";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import { fetchUserMacros } from "@/lib/api";
 import NavBar from "@/components/NavBar";
+import { useNavigate } from "react-router-dom";
 
 export default function Food() {
+  const navigate = useNavigate();
   const [date, setDate] = useState(dayjs().format("YYYY-MM-DD"));
   const [text, setText] = useState("");
   const [entries, setEntries] = useState([]);
@@ -212,6 +214,15 @@ export default function Food() {
               />
             </PopoverContent>
           </Popover>
+        </div>
+
+        <div className="w-full flex justify-center px-4">
+          <Button
+            onClick={() => navigate("/food_suggest")}
+            className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-4 py-3"
+          >
+            Go to Food Suggestions
+          </Button>
         </div>
 
         {/* Error Display */}

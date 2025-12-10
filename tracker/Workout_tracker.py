@@ -2,91 +2,95 @@ import os
 import json
 import requests
 from datetime import date
+from google import genai
+from google.genai import types
 from dotenv import load_dotenv  
 load_dotenv()
-OPENROUTER_API_KEY=os.getenv('QWEN3_API_KEY')
-def generate_workout_summary(workout_input):
-    url = "https://openrouter.ai/api/v1/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-        "Content-Type": "application/json"}
-    system_prompt = """
-You are a fitness tracking assistant. The user will describe their workout in natural language, 
-and your task is to extract structured details about each exercise they performed and also provide a summary.
 
-Return ONLY a valid JSON object (no explanation, no extra text).
-Do not include anything outside the JSON. The JSON should be directly parsable using json.loads().
-
-The JSON object should contain two keys:
-1. "detailed_exercises": a list of all exercises with full details.
-2. "summary": a concise summary including total exercises, total sets, total reps, total duration (for cardio), and estimated total calories burned.
-
-For each exercise in "detailed_exercises", include:
-- exercise_name
-- muscle_group
-- sets
-- reps (can be a number or a list if reps vary per set)
-- weight (if mentioned, else null)
-- duration_minutes (if mentioned, else estimate it)
-- calories_burned (approximate, based on intensity if not given)
-
-Example output:
-{
-  "detailed_exercises": [
-    {
-      "exercise_name": "bench press",
-      "muscle_group": "chest",
-      "sets": 3,
-      "reps": [10, 8, 6],
-      "weight": [60,60,60]
-      "duration_minutes": 15,
-      "calories_burned": 50
-    },
-    {
-      "exercise_name": "running",
-      "muscle_group": "legs",
-      "sets": null,
-      "reps": null,
-      "weight": null,
-      "duration_minutes": 30,
-      "calories_burned": 250
+try:
+    client_gemini = genai.Client()
+except Exception as e:
+    print(f"Error initializing Gemini client: {e}")
+    client_gemini = None
+MODEL_NAME = "gemini-2.5-flash" 
+WorkoutExercise = types.Schema(
+    type=types.Type.OBJECT,
+    properties={
+        "exercise_name": types.Schema(
+            type=types.Type.STRING,
+            description="Name of the exercise (e.g., bench press, running)."
+        ),
+        "muscle_group": types.Schema(
+            type=types.Type.STRING,
+            description="Primary muscle group targeted."
+        ),
+        "sets": types.Schema(
+            type=types.Type.INTEGER,
+            nullable=True,
+            description="Number of sets performed. Null for cardio exercises."
+        ),
+        "reps": types.Schema(
+            type=types.Type.ARRAY,
+            items=types.Schema(type=types.Type.INTEGER),
+            nullable=True,
+            description="List of reps per set. Null for cardio exercises."
+        ),
+        "weight": types.Schema(
+            type=types.Type.ARRAY,
+            items=types.Schema(type=types.Type.NUMBER),
+            nullable=True,
+            description="Weight lifted per set. Null for cardio exercises."
+        ),
+        "duration_minutes": types.Schema(
+            type=types.Type.NUMBER,
+            description="Duration of the exercise in minutes."
+        ),
+        "calories_burned": types.Schema(
+            type=types.Type.NUMBER,
+            description="Estimated calories burned for this exercise."
+        ),
     }
-  ],
-  "summary": {
-    "total_exercises": 2,
-    "total_sets": 3,
-    "total_reps": 24,
-    "total_duration_minutes": 30,
-    "total_calories_burned": 300
-  }
-}
+)
+WorkoutPlan = types.Schema(
+    type=types.Type.OBJECT,
+    properties={
+        "detailed_exercises": types.Schema(
+            type=types.Type.ARRAY,
+            items=WorkoutExercise,
+            description="Complete list of exercises in the generated workout plan."
+        )
+    }
+)
+
+SYSTEM_PROMPT="""You are a workout parser.
+Extract exercises and estimate duration and calories.
+Infer sets, reps, and weight when clearly implied.
+Avoid any text. Output only structured data.
 """
-
-    user_prompt=f""" Workout description:
-    \"\"\"{workout_input}\"\"\"
-    Today's date is {date.today()}.
-    Generate the structured JSON summary.
-    """
-    data={
-        'model':"x-ai/grok-4.1-fast",
-        'messages':[
-            {'role':'system', 'content':system_prompt},
-            {'role':'user', 'content':user_prompt}
-        ],
-        'temperature':0.3,
-    }
-    response=requests.post(url, headers=headers, json=data)
-    response.raise_for_status()
-    text=response.json()['choices'][0]['message']['content'].strip()
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        print("Failed to parse JSON from model response")
-        print(text)
+def generate_workout_summary(workout_input):
+    response=client_gemini.models.generate_content(
+        model=MODEL_NAME,
+        contents=[types.Content(role="user", parts=[types.Part(text=workout_input)]),],
+        config=types.GenerateContentConfig(
+        system_instruction=SYSTEM_PROMPT,
+        response_mime_type="application/json",
+        response_schema=WorkoutPlan,
+        candidate_count=1,
+    ),
+    )
+    print('the response is ',response)
+    if response.candidates and response.candidates[0].content:
+      raw_json_string = response.candidates[0].content.parts[0].text
+      try:
+        food_json = json.loads(raw_json_string)
+        return food_json
+      except json.JSONDecodeError as e:
+        print(f"Error decoding JSON from model output: {e}")
+        print("Raw text output:", raw_json_string)
         return None
-'''
+    return None
+
 if __name__=='__main__':
-    OPENROUTER_API_KEY=os.getenv('QWEN3_API_KEY')
-    workout_input='I made 3 sets of 10, 8, and 6 reps of bench press at 60kg. Then I walked for 30 minutes.'
-    result=generate_workout_summary(workout_input, OPENROUTER_API_KEY)
-    print(json.dumps(result, indent=2))'''
+    workout_input='I did 3 sets of 10, 8, and 6 reps of bench press at 60kg. Then I walked for 30 minutes.'
+    result=generate_workout_summary(workout_input)
+    print(json.dumps(result, indent=2))

@@ -7,8 +7,10 @@ import { Button } from "@/components/ui/button";
 import dayjs from "dayjs";
 import axios from "axios";
 import NavBar from "@/components/NavBar";
+import { useNavigate } from "react-router-dom";
 
 export default function Workout() {
+  const navigate = useNavigate();
   const [date, setDate] = useState(dayjs().format("YYYY-MM-DD"));
   const [text, setText] = useState("");
   const [entries, setEntries] = useState({ workouts: [], summary: null });
@@ -138,7 +140,8 @@ export default function Workout() {
       exercise_name: w.exercise_name,
       muscle_group: w.muscle_group || "Other",
       reps: Array.isArray(w.reps) ? w.reps : (w.reps != null ? [w.reps] : []),
-      weight: w.weight || null,
+weight: Array.isArray(w.weight) ? w.weight : (Array(w.reps?.length || 1).fill(w.weight ?? 0)),
+
       sets: w.sets || (Array.isArray(w.reps) ? w.reps.length : 0),
       duration_minutes: w.duration_minutes || 0,
       calories_burned: w.calories_burned || 0
@@ -285,7 +288,7 @@ export default function Workout() {
   return (
     <div className="min-h-screen bg-neutral-950 text-white">
       <NavBar />
-      <div className="flex flex-col h-[calc(100vh-4rem)]">
+      <div className="flex flex-col min-h-screen">
         {/* Date Picker - Fixed at top */}
         <div className="w-full flex justify-center p-4 pt-4 pb-2">
           <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
@@ -315,8 +318,17 @@ export default function Workout() {
           </Popover>
         </div>
 
+        <div className="w-full flex justify-center px-4 pb-4">
+          <Button
+            onClick={() => navigate("/cardioTracker")}
+            className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-4 py-3"
+          >
+            Go to Cardio Tracker
+          </Button>
+        </div>
+
         {/* Scrollable Content Area */}
-        <div className="flex-1 overflow-y-auto px-4">
+        <div className="px-4">
           {/* Error Display */}
           {error && (
             <div className="w-full max-w-2xl mx-auto p-3 bg-red-900/20 border border-red-700 rounded-xl text-red-400 text-sm text-center mb-4">
@@ -379,11 +391,18 @@ export default function Workout() {
 
 
                       if (wdata.length > 0) {
-                        setEntries({
-                          workouts: wdata,
-                          summary: null
-                        });
-                      } else {
+  // Overwrite in backend
+  await axios.post(`${API_URL}/workout/plan_save_and_upsert`, {
+    user_id,
+    date,
+    plan_name: chosen,
+    entries: wdata
+  });
+
+  // Fetch updated daily workout
+  await fetchEntries(date);
+}
+ else {
                         console.log("No exercises found in plan");
                       }
 

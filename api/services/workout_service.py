@@ -117,7 +117,6 @@ def calculate_workout(workout_payload: Dict[str, Any]) -> Dict[str, Any]:
                 elif reps is None:
                     ex["reps"] = []
 
-                # --- Normalize weight to always be a list ---
                 weight = ex.get("weight")
                 if isinstance(weight, (int, float)):
                     ex["weight"] = [weight]
@@ -126,7 +125,10 @@ def calculate_workout(workout_payload: Dict[str, Any]) -> Dict[str, Any]:
                 if name in idx_map:
                     existing_ex = existing_data[idx_map[name]]
 
-                    existing_ex["sets"] += ex.get("sets", 0) or 0
+                    existing_sets = existing_ex.get("sets") or 0
+                    incoming_sets = ex.get("sets") or 0
+                    existing_ex["sets"] = existing_sets + incoming_sets
+
 
                     new_reps = ex.get("reps", [])
                     if isinstance(new_reps, list):
@@ -142,14 +144,12 @@ def calculate_workout(workout_payload: Dict[str, Any]) -> Dict[str, Any]:
 
                     new_weight = ex.get("weight")
 
-                    # Ensure existing weight is a list
                     if "weight" not in existing_ex:
                         existing_ex["weight"] = []
 
                     elif isinstance(existing_ex["weight"], (int, float)):
                         existing_ex["weight"] = [existing_ex["weight"]]
 
-                    # Append the new weight correctly
                     if new_weight is not None:
                         if isinstance(new_weight, list):
                             existing_ex["weight"].extend(new_weight)
@@ -336,22 +336,7 @@ def get_workout_plan(user_id: str, plan_name: str = None, list_only: bool = Fals
     return {"error": "Plan not found."}
 
 def save_plan_and_daily(user_id: str, date: str, plan_name: str, frontend_exercises: list):
-    """
-    OVERWRITE semantics:
-      - Overwrite the named plan's exercises with frontend_exercises
-      - Overwrite the daily workout log for given date with frontend_exercises (and recompute summary)
-    frontend_exercises expected shape (frontend): [
-      {
-        "exercise_name": "Bench Press",
-        "muscle_group": "Chest",
-        "reps": [12,10,8],
-        "weight": 40,
-        "sets": 3,
-        "duration_minutes": 10,
-        "calories_burned": 50
-      }, ...
-    ]
-    """
+
     if not user_id:
         return {"error": "User ID is required."}
     if not date:
@@ -362,23 +347,22 @@ def save_plan_and_daily(user_id: str, date: str, plan_name: str, frontend_exerci
         return {"error": "Database not initialised."}
 
     try:
-        # --- 1) Convert frontend_exercises -> plan.exercises format ---
         plan_exercises = []
         for ex in frontend_exercises:
-            # Build sets list from reps array
             reps_arr = ex.get("reps", [])
             sets_list = []
-            # if frontend provided detailed set objects, keep them; else build simple set objects
             if reps_arr and all(isinstance(r, (int, float)) for r in reps_arr):
                 for i, r in enumerate(reps_arr):
+                    weights = ex.get("weight", [])
+                    weight_value = weights[i] if isinstance(weights, list) and len(weights) > i else None
+
                     sets_list.append({
                         "set_number": i + 1,
                         "reps": r,
-                        "weight": ex.get("weight"),
+                        "weight": weight_value,
                         "updated_at": datetime.datetime.utcnow()
                     })
             else:
-                # fallback: create a single set entry if reps is not a numeric array
                 sets_list.append({
                     "set_number": 1,
                     "reps": reps_arr if not isinstance(reps_arr, (int, float)) else reps_arr,
@@ -395,7 +379,6 @@ def save_plan_and_daily(user_id: str, date: str, plan_name: str, frontend_exerci
                 "updated_at": datetime.datetime.utcnow()
             })
 
-        # --- 2) Overwrite the plan's exercises (create plan if missing) ---
         user_plan_doc = workout_plan_col.find_one({"user_id": user_id})
         if not user_plan_doc:
             new_plan = {
@@ -418,7 +401,6 @@ def save_plan_and_daily(user_id: str, date: str, plan_name: str, frontend_exerci
 
             for plan in plans:
                 if plan.get("name", "").lower() == plan_name.strip().lower():
-                    # FULL REPLACE (overwrite)
                     new_plans.append({
                         "name": plan_name.strip().title(),
                         "created_at": plan.get("created_at", datetime.datetime.utcnow()),
@@ -427,10 +409,8 @@ def save_plan_and_daily(user_id: str, date: str, plan_name: str, frontend_exerci
                     })
                     plan_found = True
                 else:
-                    # keep other plans untouched
                     new_plans.append(plan)
 
-            # If plan not found → create it
             if not plan_found:
                 new_plans.append({
                     "name": plan_name.strip().title(),
@@ -439,15 +419,10 @@ def save_plan_and_daily(user_id: str, date: str, plan_name: str, frontend_exerci
                     "exercises": plan_exercises
                 })
 
-            # FINAL write
             workout_plan_col.update_one(
                 {"user_id": user_id},
                 {"$set": {"plans": new_plans, "updated_at": datetime.datetime.utcnow()}}
             )
-
-
-        # --- 3) Overwrite daily workout log for date with frontend_exercises (normalized) ---
-        # Build workout_data in the shape your frontend expects (exercise_name, reps array, sets count, weight, etc.)
         workout_data_for_day = []
         for ex in frontend_exercises:
             reps = ex.get("reps", [])
@@ -463,10 +438,8 @@ def save_plan_and_daily(user_id: str, date: str, plan_name: str, frontend_exerci
                 "updated_at": datetime.datetime.utcnow()
             })
 
-        # compute summary
         summary = compute_workout_summary(workout_data_for_day)
 
-        # upsert the daily log (overwrite)
         workout_col.update_one(
             {"user_id": user_id, "date": date},
             {"$set": {
@@ -479,7 +452,6 @@ def save_plan_and_daily(user_id: str, date: str, plan_name: str, frontend_exerci
             upsert=True
         )
 
-        # trigger and progress updates (use existing helpers)
         handle_wo_summary_trigger(user_id, summary, date)
         update_daily_progress(user_id, date)
 
@@ -496,22 +468,18 @@ def delete_set(data):
     workouts = doc.get("workout_data", [])
 
 
-    # Find matching exercise
     for i, w in enumerate(workouts):
         if w["exercise_name"].lower() == data.exercise_name.lower():
             old_sets = w["sets"] or 1
             avg_duration = (w.get("duration_minutes", 0) or 0) / old_sets
             avg_calories = (w.get("calories_burned", 0) or 0) / old_sets
-            # Validate set index
             if data.set_index < 0 or data.set_index >= len(w["reps"]):
                 return {"status": "error", "message": "Invalid set index"}
 
-            # Remove the specific set
             w["reps"].pop(data.set_index)
             if isinstance(w.get("weight"), list):
                 w["weight"].pop(data.set_index)
 
-            # If no sets left → delete entire exercise
             if len(w["reps"]) == 0:
                 workouts.pop(i)
             else:
@@ -521,7 +489,6 @@ def delete_set(data):
             w["calories_burned"] = round(avg_calories * new_sets, 2)
 
             summary = compute_workout_summary(workouts)
-            # Save back
             workout_col.update_one(
                 {"user_id": data.user_id, "date": data.date},
                 {"$set": {"workout_data": workouts,"summary": summary}}

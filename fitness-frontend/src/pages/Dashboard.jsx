@@ -139,7 +139,7 @@ export default function Dashboard() {
 
         <div className="grid grid-cols-2 gap-3">
           <Button className="rounded-xl bg-neutral-800 hover:bg-neutral-700" onClick={() => navigate("/food_suggest")}>Food Suggestion</Button>
-          <Button className="rounded-xl bg-neutral-800 hover:bg-neutral-700" onClick={() => navigate("/workout")}>Workout Plan</Button>
+          <Button className="rounded-xl bg-neutral-800 hover:bg-neutral-700" onClick={() => navigate("/cardioTracker")}>Track Cardio</Button>
           <Button className="rounded-xl bg-neutral-800 hover:bg-neutral-700" onClick={() => navigate("/planner")}>Macros</Button>
           <Button className="rounded-xl bg-neutral-800 hover:bg-neutral-700" onClick={() => navigate("/progress")}>Log Weight</Button>
         </div>

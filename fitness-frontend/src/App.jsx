@@ -11,6 +11,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Planner from "./pages/Planner";
 import Progress from "./pages/Progress";
 import Foodsuggest from "./pages/Foodsuggest";
+import CardioTracker from "./pages/CardioTracker";
 
 export default function App() {
   return (
@@ -69,6 +70,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <Workout />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/cardioTracker"
+          element={
+            <ProtectedRoute>
+              <CardioTracker />
             </ProtectedRoute>
           }
         />
