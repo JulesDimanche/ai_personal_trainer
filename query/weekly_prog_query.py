@@ -2,9 +2,9 @@
 import os
 import json
 import re
-from datetime import datetime, timedelta
 from pymongo import MongoClient
-from openai import OpenAI
+import sys
+sys.path.append('..')
 from db_connection import db
 
 QUERY_TEMPLATES = {
@@ -12,20 +12,17 @@ QUERY_TEMPLATES = {
         "collection": "weekly_progress",
         "filter": {
             "user_id": user_id,
-            **(# Case 1: both provided → overlap logic
+            **(
             {
                 "start_date": {"$lte": end_date},
                 "end_date": {"$gte": start_date}
             } if start_date and end_date else
-            # Case 2: only start_date → stored_end >= start_date
             {
                 "end_date": {"$gte": start_date}
             } if start_date else
-            # Case 3: only end_date → stored_start <= end_date
             {
                 "start_date": {"$lte": end_date}
             } if end_date else
-            # Case 4: none → return all
             {})
         },
         "projection": {
@@ -88,7 +85,6 @@ QUERY_TEMPLATES = {
 
 def build_query(user_input, user_id):
     entities=user_input
-    intent = entities.get("intent", "weekly_progress")
     start_date = entities.get("start_date")
     end_date = entities.get("end_date")
     week_number = entities.get("week_number")
@@ -139,7 +135,6 @@ def format_response(query_data):
 
             lines.append(f"Week {week_num}: {start} to {end}\n")
 
-            # -------- Adjusted Targets --------
             adj = week.get("adjusted_targets", {})
             macros = adj.get("daily_macros", {})
 
@@ -153,7 +148,6 @@ def format_response(query_data):
             lines.append(f"- Workout Intensity: {adj.get('workout_intensity', 'N/A')}")
             lines.append(f"- Target Weight: {adj.get('target_weight_kg', 'N/A')} kg\n")
 
-            # -------- Average Achieved --------
             achieved = week.get("average_achieved", {})
 
             lines.append("Average Achieved:")
@@ -167,14 +161,29 @@ def format_response(query_data):
             lines.append(f"- Last Week Weight: {achieved.get('last_week_weight_kg', 'N/A')} kg")
             lines.append(f"- Weight Change: {achieved.get('weight_change_kg', 'N/A')} kg")
 
-            lines.append("")  # blank line after each week
+            lines.append("")
 
         return "\n".join(lines)
 
     except Exception as e:
         print("Formatting error:", e)
         return "Formatting error."
-    
+def to_toon_compact(data):
+    if isinstance(data, dict):
+        items = []
+        for k, v in data.items():
+            items.append(f"{k}:{to_toon_compact(v)}")
+        return "(" + ",".join(items) + ")"
+
+    elif isinstance(data, list):
+        items = [to_toon_compact(i) for i in data]
+        return "[" + ",".join(items) + "]"
+
+    elif isinstance(data, str):
+        return f"\"{data}\""
+
+    else:
+        return str(data)
 
 if __name__ == "__main__":
     user_id = "u001"
@@ -184,5 +193,5 @@ if __name__ == "__main__":
     print("Generated Query:", query)
     results = execute_query(query)
     print("Results:", results)
-    print(format_response(results))
+    print(to_toon_compact(results))
 

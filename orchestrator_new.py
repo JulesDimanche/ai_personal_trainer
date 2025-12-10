@@ -176,29 +176,34 @@ def run_subquery_item(item: Dict[str, Any], user_id: str) -> Dict[str, Any]:
             if intent == "calories" and mongo_calories:
                 q = mongo_calories.build_query(item, user_id)
                 rows = mongo_calories.execute_query(q)
+                rows=mongo_calories.to_toon_compact(rows)
                 result["data"] = rows
                 return result
 
             if intent == "workout" and mongo_workout:
                 q = mongo_workout.build_workout_query(item, user_id)
                 rows = mongo_workout.execute_workout_query(q)
+                rows = mongo_workout.to_toon_compact(rows)
                 result["data"] = rows
                 return result
 
             if intent == "weekly_progress" and mongo_weekly:
                 q = mongo_weekly.build_query(item, user_id)
                 rows = mongo_weekly.execute_query(q)
+                rows = mongo_weekly.to_toon_compact(rows)
                 result["data"] = rows
                 return result
             if intent == "macros" and mongo_macros:
                 q = mongo_macros.build_macros_query(item, user_id)
                 rows = mongo_macros.execute_macros_query(q)
+                rows = mongo_macros.to_toon_compact(rows)
                 result["data"] = rows
                 return result
 
             if mongo_calories:
                 q = mongo_calories.build_query(item, user_id)
                 rows = mongo_calories.execute_query(q)
+                rows = mongo_calories.to_toon_compact(rows)
                 result["data"] = rows
                 result["summary"] = None
                 return result

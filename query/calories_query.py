@@ -1,11 +1,10 @@
 import os
 import json
 import ast
-import re
-from datetime import datetime, timedelta
-from dateutil import parser
 from pymongo import MongoClient
-from db_connection import db, diet_col
+import sys
+sys.path.append('..')
+from db_connection import db
 
 QUERY_TEMPLATES = {
     "calories": lambda date, user_id: {
@@ -20,19 +19,6 @@ QUERY_TEMPLATES = {
             "plan_data.items.proteins": 1,
             "plan_data.items.fats": 1,
             "plan_data.items.carbs": 1,
-            "_id": 0
-        }
-    },
-    "food_details": lambda food_name, user_id: {
-        "collection": "diet_logs",
-        "filter": {
-            "user_id": user_id,
-            "plan_data.items.food": {"$regex": food_name, "$options": "i"}
-        },
-        "projection": {
-            "date": 1,
-            "plan_data.meal_type": 1,
-            "plan_data.items.$": 1, 
             "_id": 0
         }
     },
@@ -117,7 +103,22 @@ def format_response(query_data):
     except Exception as e:
         print(f"Formatting error: {str(e)}")
         return "Formatting error."
+def to_toon_compact(data):
+    if isinstance(data, dict):
+        items = []
+        for k, v in data.items():
+            items.append(f"{k}:{to_toon_compact(v)}")
+        return "(" + ",".join(items) + ")"
 
+    elif isinstance(data, list):
+        items = [to_toon_compact(i) for i in data]
+        return "[" + ",".join(items) + "]"
+
+    elif isinstance(data, str):
+        return f"\"{data}\""
+
+    else:
+        return str(data)
 
 
 if __name__ == "__main__":
@@ -127,4 +128,4 @@ if __name__ == "__main__":
     print("Generated Query:", query)
     results = execute_query(query)
     print('the result is: ',results)
-    print(format_response(results))
+    print(to_toon_compact(results))

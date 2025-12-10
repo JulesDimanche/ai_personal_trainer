@@ -6,11 +6,10 @@ from dateutil import parser
 from pymongo import MongoClient
 import sys
 sys.path.append('..')
-from db_connection import db, workout_col
+from db_connection import db
 
 
 
-# ----------- QUERY TEMPLATES -----------
 
 WORKOUT_QUERY_TEMPLATES = {
     "workout": lambda date, user_id: {
@@ -137,10 +136,27 @@ def format_workout_response(query_data):
         print(f"Formatting error: {str(e)}")
         return "Formatting error."
 
+def to_toon_compact(data):
+    if isinstance(data, dict):
+        items = []
+        for k, v in data.items():
+            items.append(f"{k}:{to_toon_compact(v)}")
+        return "(" + ",".join(items) + ")"
+
+    elif isinstance(data, list):
+        items = [to_toon_compact(i) for i in data]
+        return "[" + ",".join(items) + "]"
+
+    elif isinstance(data, str):
+        return f"\"{data}\""
+
+    else:
+        return str(data)
+    
 if __name__ == "__main__":
     user_id = "b441ef92-d75b-492e-be51-c2c8b46f4048"
     query = build_workout_query({'intent': 'workout', 'start_date': None, 'end_date': '2025-12-01', 'exercise': None}, user_id)
     print("Generated Query:", query)
     results = execute_workout_query(query)
     print("Result:", results)
-    print(format_workout_response(results))
+    print(to_toon_compact(results))

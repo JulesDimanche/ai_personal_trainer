@@ -5,6 +5,8 @@ from datetime import datetime, timedelta
 from dateutil import parser
 from pymongo import MongoClient
 from openai import OpenAI
+import sys
+sys.path.append('..')
 from db_connection import db
 
 
@@ -17,14 +19,10 @@ def build_macros_query(data, user_id):
         intent="day"
     if start_date is None:
         start_date=end_date
-    # Base query structure
     base_query = {"collection": "macro_plans"}
-    #print("Building macros query with intent:", intent, "and start_date:", start_date)
 
-    # ---------- INTENT: DAY ----------
     if intent == "day":
         try:
-            # Build aggregation pipeline to find the specific week macros
             pipeline = [
                 {"$match": {"user_id": user_id}},
                 {"$project": {
@@ -53,7 +51,6 @@ def build_macros_query(data, user_id):
 
         except Exception as e:
             print(f"⚠️ Date parse error: {e}")
-            # Fallback — exact match on start_date if parsing fails
             pipeline = [
                 {"$match": {"user_id": user_id}},
                 {"$project": {
@@ -74,7 +71,6 @@ def build_macros_query(data, user_id):
             ]
             base_query["pipeline"] = pipeline
 
-    # ---------- INTENT: FULL DETAILS ----------
     else:
         base_query["filter"] = {"user_id": user_id}
         base_query["projection"] = {
@@ -100,13 +96,11 @@ def execute_macros_query(query_json):
         collection_name = query_json.get("collection", "macro_plans")
         collection = db[collection_name]
 
-        # 🧠 Handle aggregation pipelines
         if "pipeline" in query_json:
             pipeline = query_json["pipeline"]
             results = list(collection.aggregate(pipeline))
             return results
 
-        # 🧠 Handle simple find queries
         elif "filter" in query_json:
             mongo_filter = query_json.get("filter", {})
             projection = query_json.get("projection", None)
@@ -133,12 +127,10 @@ def format_macros_response(query_data):
         lines = []
         lines.append("Metabolism & Goal Summary:\n")
 
-        # ---------- USER ID ----------
         user_id = entry.get("user_id")
         if user_id:
             lines.append(f"User ID: {user_id}\n")
 
-        # ---------- GOAL SECTION ----------
         goal_type = entry.get("goal_type")
         start_weight = entry.get("start_weight_kg")
         target_weight = entry.get("target_weight_kg")
@@ -150,9 +142,8 @@ def format_macros_response(query_data):
                 lines.append(f"Starting Weight: {start_weight} kg")
             if target_weight:
                 lines.append(f"Target Weight: {target_weight} kg")
-            lines.append("")  # blank line
+            lines.append("")
 
-        # ---------- METABOLIC STATS ----------
         bmr = entry.get("BMR")
         tdee = entry.get("TDEE")
         goal_cal = entry.get("Goal_Calories")
@@ -166,7 +157,6 @@ def format_macros_response(query_data):
                 lines.append(f"Goal Calories per Day: {goal_cal}")
             lines.append("")
 
-        # ---------- MACROS (supports both 'Macros' and 'expected_macros') ----------
         macros = entry.get("Macros") or entry.get("expected_macros")
         if macros:
             lines.append("Base Macro Targets:")
@@ -176,7 +166,6 @@ def format_macros_response(query_data):
             lines.append(f"- Fiber: {macros.get('Fiber_g', 'N/A')} g")
             lines.append("")
 
-        # ---------- WEEKLY PLAN ----------
         weekly_plan = entry.get("Weekly_Plan", [])
         if weekly_plan:
             lines.append(f"{len(weekly_plan)}-Week Progressive Plan:\n")
@@ -197,19 +186,36 @@ def format_macros_response(query_data):
                     f"Fiber {exp_macros.get('Fiber_g','N/A')}g"
                 )
 
-                lines.append("")  # space between weeks
+                lines.append("")
 
         return "\n".join(lines)
 
     except Exception as e:
         print("Formatting error:", e)
         return "Formatting error."
+    
+def to_toon_compact(data):
+    if isinstance(data, dict):
+        items = []
+        for k, v in data.items():
+            items.append(f"{k}:{to_toon_compact(v)}")
+        return "(" + ",".join(items) + ")"
+
+    elif isinstance(data, list):
+        items = [to_toon_compact(i) for i in data]
+        return "[" + ",".join(items) + "]"
+
+    elif isinstance(data, str):
+        return f"\"{data}\""
+
+    else:
+        return str(data)
 
 
 if __name__ == "__main__":
     user_id = "u002"
-    query = build_macros_query({'intent': 'macros', 'subquery': 'show macros for 2025-10-21', 'start_date': '2025-11-20', 'end_date': '2025-11-20'}, user_id)
+    query = build_macros_query({'intent': 'macros', 'subquery': 'show macros for 2025-10-21', 'start_date': '2025-11-24', 'end_date': '2025-11-25'}, user_id)
     print("Generated Query:", query)
     results = execute_macros_query(query)
     print("Result:", results)
-    print(format_macros_response(results))
+    print(to_toon_compact(results))
