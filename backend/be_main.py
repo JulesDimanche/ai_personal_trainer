@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends,Body
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from datetime import timedelta
@@ -38,7 +38,11 @@ class UserLogin(BaseModel):
     password: str
 
 @app.post("/auth/signup")
-def signup(user: UserCreate):
+def signup(user: UserCreate= Body(...)):
+    print("DEBUG-PASSWORD:", repr(user.password))
+    print("TYPE:", type(user.password))
+    print("LENGTH:", len(user.password))
+
     if user_data.find_one({"email": user.email}):
         raise HTTPException(status_code=400, detail="Email already registered")
     user_id = str(uuid.uuid4()) 
@@ -49,7 +53,7 @@ def signup(user: UserCreate):
     return {"token": token,"user_id": user_id,"name":user.name}
 
 @app.post("/auth/login")
-def login(user: UserLogin):
+def login(user: UserLogin= Body(...)):
     db_user = user_data.find_one({"email": user.email})
     if not db_user:
         raise HTTPException(status_code=400, detail="Invalid credentials")
