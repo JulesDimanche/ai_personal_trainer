@@ -2,7 +2,7 @@ import os
 import json
 import ast
 from pymongo import MongoClient
-from backend.db_connection import db
+from db_connection import db
 
 QUERY_TEMPLATES = {
     "calories": lambda date, user_id: {

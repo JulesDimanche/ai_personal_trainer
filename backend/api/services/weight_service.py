@@ -1,9 +1,9 @@
-from backend.tracker.progress_tracker import update_daily_progress
+from tracker.progress_tracker import update_daily_progress
 import os
 
 weight_col=None
 try:
-    from backend.db_connection import db
+    from db_connection import db
     weight_col=db["weights"]
     print("weight_col is loaded from mongodb")
 except Exception:

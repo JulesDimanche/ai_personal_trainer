@@ -1,12 +1,12 @@
 import os
 from datetime import datetime
 from typing import Dict, Any
-from backend.macro_generator import generate_macro
+from macro_generator import generate_macro
 
 user_col = None
 
 try:
-    from backend.db_connection import db as _db
+    from db_connection import db as _db
     user_col = _db['users']
     user_data_col=_db['user_data']
     print("Using user_col from db_connection module")

@@ -3,16 +3,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from datetime import timedelta
 import uuid
-from backend.dependencies import get_current_user
-from backend.api.routes.macros_route import router as macro_router
-from backend.api.routes.calories_route import router as calories_router
-from backend.api.routes.workout_route import router as workout_router
-from backend.api.routes.query_route import router as query_router
-from backend.api.routes.user_route import router as user_router
-from backend.api.routes.weight_route import router as weight_router
-from backend.api.routes.food_sug_route import router as food_sug_router
-from backend.db_connection import user_data
-from backend.auth import hash_password, verify_password, create_access_token
+from dependencies import get_current_user
+from api.routes.macros_route import router as macro_router
+from api.routes.calories_route import router as calories_router
+from api.routes.workout_route import router as workout_router
+from api.routes.query_route import router as query_router
+from api.routes.user_route import router as user_router
+from api.routes.weight_route import router as weight_router
+from api.routes.food_sug_route import router as food_sug_router
+from db_connection import user_data
+from auth import hash_password, verify_password, create_access_token
 
 app = FastAPI()
 origins = [

@@ -1,10 +1,10 @@
 import os
 import sys
 from typing import List,Dict
-from backend.suggest.food_sug import pick_top_base_foods,pick_top_protein_boosters,normalize_item,build_prompt,call_llm
-from backend.api.models.food_sugg_model import SuggestedComponent,SuggestedOption
+from suggest.food_sug import pick_top_base_foods,pick_top_protein_boosters,normalize_item,build_prompt,call_llm
+from api.models.food_sugg_model import SuggestedComponent,SuggestedOption
 try:
-    from backend.db_connection import db as db_
+    from db_connection import db as db_
     food_normal_col=db_['food_normal']
     print('food_normal is imported from db')
     food_protein_col=db_['food_protein']

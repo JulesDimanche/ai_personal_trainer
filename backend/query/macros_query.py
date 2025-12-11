@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from dateutil import parser
 from pymongo import MongoClient
 from openai import OpenAI
-from backend.db_connection import db
+from db_connection import db
 
 
 def build_macros_query(data, user_id):

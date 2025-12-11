@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Body, HTTPException
-from backend.api.models.workout_model import WorkoutRequest,SaveWorkoutResponse,WorkoutDeleteSetModel,WorkoutEditModel
-from backend.api.services.workout_service import calculate_workout,view_workout,create_or_update_workout_plan,get_workout_plan,save_plan_and_daily,delete_set,edit_set
+from api.models.workout_model import WorkoutRequest,SaveWorkoutResponse,WorkoutDeleteSetModel,WorkoutEditModel
+from api.services.workout_service import calculate_workout,view_workout,create_or_update_workout_plan,get_workout_plan,save_plan_and_daily,delete_set,edit_set
 router = APIRouter(prefix="/workout", tags=["workout"])
 @router.post("/calculate")
 async def calculate_workout_data(payload: WorkoutRequest):

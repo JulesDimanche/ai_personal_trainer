@@ -1,5 +1,5 @@
 import datetime
-from backend.db_connection import summary_col
+from db_connection import summary_col
 def handle_summary_trigger(user_id, summary_text, timestamp):
     try:
         date_str=timestamp

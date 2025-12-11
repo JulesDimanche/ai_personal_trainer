@@ -3,7 +3,7 @@ import os
 import json
 import re
 from pymongo import MongoClient
-from backend.db_connection import db
+from db_connection import db
 
 QUERY_TEMPLATES = {
     "weekly_progress": lambda start_date, end_date, user_id: {

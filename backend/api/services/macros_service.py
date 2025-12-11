@@ -1,12 +1,12 @@
 import os
 from datetime import datetime,date
 from typing import Dict, Any
-from backend.macro_generator import generate_macro
-from backend.tracker.progress_tracker import generate_initial_week
+from macro_generator import generate_macro
+from tracker.progress_tracker import generate_initial_week
 macro_collection = None
 
 try:
-    from backend.db_connection import db as _db
+    from db_connection import db as _db
     macro_collection = _db['macro_plans']
     print("Using macro_collection from db_connection module")
 except Exception:

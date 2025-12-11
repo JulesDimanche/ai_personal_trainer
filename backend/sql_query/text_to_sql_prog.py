@@ -5,7 +5,7 @@ from functools import lru_cache
 import sys
 
 try:
-    from backend.orchestrator_new import client_deepseek, EXTRA_HEADERS
+    from orchestrator_new import client_deepseek, EXTRA_HEADERS
 except Exception:
     client_deepseek = None
     EXTRA_HEADERS = {}

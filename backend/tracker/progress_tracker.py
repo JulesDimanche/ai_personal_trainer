@@ -2,7 +2,7 @@ from pymongo import MongoClient, ASCENDING
 from datetime import datetime, timedelta
 from typing import Dict, Any, Optional, List
 import math
-from backend.db_connection import progress_col,macro_collection,progress_weekly_col,weight_col,summary_col,workout_summary_col
+from db_connection import progress_col,macro_collection,progress_weekly_col,weight_col,summary_col,workout_summary_col
 
 
 def iso_date(dt: datetime) -> str:

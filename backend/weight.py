@@ -1,4 +1,4 @@
-from backend.db_connection import weight_col
+from db_connection import weight_col
 from datetime import datetime
 def log_user_weight(user_id: str, weight: float, date: datetime = None):
     if date is None:

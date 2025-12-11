@@ -3,7 +3,7 @@ import json
 import re
 from datetime import datetime
 from typing import List, Dict, Any
-from backend.Fitness_kb.fitness_coach import run_coach_reasoning_engine
+from Fitness_kb.fitness_coach import run_coach_reasoning_engine
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from google.genai.types import Type
 from google import genai
@@ -12,30 +12,30 @@ from openai import OpenAI
 from dotenv import load_dotenv
 
 try:
-    import backend.query.calories_query as mongo_calories
+    import query.calories_query as mongo_calories
 except Exception:
     mongo_calories = None
 
 try:
-    import backend.query.workout_query as mongo_workout
+    import query.workout_query as mongo_workout
 except Exception:
     mongo_workout = None
 
 try:
-    import backend.query.weekly_prog_query as mongo_weekly
+    import query.weekly_prog_query as mongo_weekly
 except Exception:
     mongo_weekly = None
 
 try:
-    import backend.query.macros_query as mongo_macros
+    import query.macros_query as mongo_macros
 except Exception:
     mongo_macros = None
 try:
-    import backend.sql_query.text_to_sql_runner as sql_runner
+    import sql_query.text_to_sql_runner as sql_runner
 except Exception:
     sql_runner = None
 try:
-    import backend.sql_query.text_to_sql_prog as sql_progress
+    import sql_query.text_to_sql_prog as sql_progress
 except Exception:
     sql_progress = None
 

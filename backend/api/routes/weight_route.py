@@ -1,6 +1,6 @@
 from fastapi import HTTPException, APIRouter
-from backend.api.models.weight_model import Weight_save
-from backend.api.services.weight_service import weight_save,view_weight
+from api.models.weight_model import Weight_save
+from api.services.weight_service import weight_save,view_weight
 router = APIRouter(prefix="/progress", tags=["workout"])
 @router.post("/weight_save")
 async def save_weight(payload: Weight_save):
