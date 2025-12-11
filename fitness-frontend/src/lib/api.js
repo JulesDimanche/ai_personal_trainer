@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE = "http://localhost:8000"; // replace with your backend URL
+const API_BASE = "https://ai-personal-trainer-xgko.onrender.com"; // replace with your backend URL
 
 export const fetchUserProfile = async (userId) => {
     const token = localStorage.getItem("token");

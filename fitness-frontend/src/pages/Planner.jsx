@@ -51,7 +51,7 @@ export default function Planner() {
     };
 
     try {
-      const res = await fetch("http://localhost:8000/macros/generate", {
+      const res = await fetch("https://ai-personal-trainer-xgko.onrender.com/macros/generate", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

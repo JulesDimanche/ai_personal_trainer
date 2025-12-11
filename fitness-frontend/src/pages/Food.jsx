@@ -22,7 +22,7 @@ export default function Food() {
 
   const user_id = localStorage.getItem("user_id");
   const token = localStorage.getItem("token");
-  const API_URL = "http://localhost:8000";
+  const API_URL = "https://ai-personal-trainer-xgko.onrender.com";
 
   const fetchEntries = async (selectedDate) => {
     try {

@@ -11,7 +11,7 @@ export default function Chat() {
   const user_id = localStorage.getItem("user_id");
   const token = localStorage.getItem("token");
 
-  const API_URL = "http://localhost:8000/query/answer";
+  const API_URL = "https://ai-personal-trainer-xgko.onrender.com/query/answer";
 
   useEffect(() => {
     if (scrollRef.current) {

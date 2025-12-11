@@ -20,7 +20,7 @@ export default function Foodsuggest() {
 
   const user_id = localStorage.getItem("user_id");
   const token = localStorage.getItem("token");
-  const API_URL = "http://localhost:8000";
+  const API_URL = "https://ai-personal-trainer-xgko.onrender.com";
 
   // --------------------
   // FETCH TODAY'S MACROS
