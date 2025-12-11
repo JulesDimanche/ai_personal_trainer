@@ -23,8 +23,10 @@ EXTRA_HEADERS = {
     "X-Title": os.environ.get("SITE_NAME", "Query Orchestrator")
 }
 
-KB_INDEX_PATH = "fitness_kb.index"
-KB_JSON_PATH = "fitness_kb.json"
+BASE_DIR = os.path.dirname(__file__)
+KB_INDEX_PATH = os.path.join(BASE_DIR, "fitness_kb.index")
+KB_JSON_PATH = os.path.join(BASE_DIR, "fitness_kb.json")
+
 
 faiss_index = faiss.read_index(KB_INDEX_PATH)
 
