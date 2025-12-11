@@ -5,7 +5,7 @@ from functools import lru_cache
 from typing import Tuple
 
 try:
-    from orchestrator_new import client_deepseek, EXTRA_HEADERS
+    from backend.orchestrator_new import client_deepseek, EXTRA_HEADERS
 except Exception:
     client_deepseek = None
     EXTRA_HEADERS = {}

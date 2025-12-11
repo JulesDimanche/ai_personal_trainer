@@ -1,7 +1,7 @@
 import os
 from datetime import datetime
 from typing import Dict, Any
-from macro_generator import generate_macro
+from backend.macro_generator import generate_macro
 
 user_col = None
 

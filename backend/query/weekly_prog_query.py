@@ -3,8 +3,6 @@ import os
 import json
 import re
 from pymongo import MongoClient
-import sys
-sys.path.append('..')
 from backend.db_connection import db
 
 QUERY_TEMPLATES = {

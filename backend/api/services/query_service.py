@@ -1,6 +1,6 @@
 import os
 from typing import Dict, Any
-from orchestrator_new import answer_user_query
+from backend.orchestrator_new import answer_user_query
 print("query_service.py loaded")
 def query_answer_sevice(query_payload: Dict[str, Any]) -> Dict[str, Any]:
     if "query" not in query_payload:
