@@ -2,7 +2,7 @@ import os
 from datetime import datetime,date
 from typing import Dict, Any
 from backend.macro_generator import generate_macro
-from tracker.progress_tracker import generate_initial_week
+from backend.tracker.progress_tracker import generate_initial_week
 macro_collection = None
 
 try:

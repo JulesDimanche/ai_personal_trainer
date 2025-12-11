@@ -1,8 +1,8 @@
 import os
 from typing import Dict, Any
-from tracker.Workout_tracker import generate_workout_summary
-from trigger.workout_trigger import handle_wo_summary_trigger
-from tracker.progress_tracker import update_daily_progress
+from backend.tracker.Workout_tracker import generate_workout_summary
+from backend.trigger.workout_trigger import handle_wo_summary_trigger
+from backend.tracker.progress_tracker import update_daily_progress
 import datetime
 workout_col = None
 try:

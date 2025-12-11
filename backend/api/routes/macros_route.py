@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
-from api.models.macros_model import MacroRequest
-from api.services.macros_service import generate_and_upsert_macro, view_macros,view_macros_full
-from api.services.user_service import generate_user_data
+from backend.api.models.macros_model import MacroRequest
+from backend.api.services.macros_service import generate_and_upsert_macro, view_macros,view_macros_full
+from backend.api.services.user_service import generate_user_data
 
 router = APIRouter(prefix="/macros", tags=["macros"])
 

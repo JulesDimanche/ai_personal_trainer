@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
-from api.models.user_model import UserRequest
-from api.services.user_service import generate_user_data,view_user
+from backend.api.models.user_model import UserRequest
+from backend.api.services.user_service import generate_user_data,view_user
 router = APIRouter(prefix="/user", tags=["user"])
 
 '''@router.post("/generate")

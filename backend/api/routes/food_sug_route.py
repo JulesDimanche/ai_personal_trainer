@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
-from api.models.food_sugg_model import FoodSuggestionRequest
-from api.services.food_sugg_service import suggest_food
+from backend.api.models.food_sugg_model import FoodSuggestionRequest
+from backend.api.services.food_sugg_service import suggest_food
 router=APIRouter(prefix="/food")
 @router.post("/suggest")
 async def suggest_food_main(req: FoodSuggestionRequest):

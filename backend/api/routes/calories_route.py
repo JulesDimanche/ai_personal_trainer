@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
-from api.models.calories_model import CaloriesRequest,DeleteFood
-from api.services.calories_service import calculate_calories,view_calories,delete_food
+from backend.api.models.calories_model import CaloriesRequest,DeleteFood
+from backend.api.services.calories_service import calculate_calories,view_calories,delete_food
 router = APIRouter(prefix="/calories", tags=["calories"])
 @router.post("/calculate")
 async def calculate_calorie_intake(payload: CaloriesRequest):

@@ -1,4 +1,4 @@
-from tracker.progress_tracker import update_daily_progress
+from backend.tracker.progress_tracker import update_daily_progress
 import os
 
 weight_col=None

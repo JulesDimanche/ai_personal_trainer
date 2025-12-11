@@ -1,8 +1,8 @@
 import os
 from typing import Dict, Any
-from tracker.Calorie_tracker import estimate_calories
-from trigger.diet_trigger import handle_summary_trigger
-from tracker.progress_tracker import update_daily_progress
+from backend.tracker.Calorie_tracker import estimate_calories
+from backend.trigger.diet_trigger import handle_summary_trigger
+from backend.tracker.progress_tracker import update_daily_progress
 import datetime
 calories_col = None
 try:
