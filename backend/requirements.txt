@@ -21,3 +21,4 @@ fastembed
 # JWT
 python-jose[cryptography]
 python-multipart
+passlib[bcrypt]
