@@ -70,8 +70,12 @@ def view_macros(user_id: str,date:str) -> Dict[str, Any]:
     user_data = macro_collection.find_one({"user_id": user_id}, {"_id": 0})
 
     if not user_data:
-        raise ValueError(f"No macro plan found for user_id: {user_id}")
-
+        return { "Goal_Calories": 0,
+                "Protein_g":0,
+                "Fats_g": 0,
+                "Carbs_g": 0,
+                "Fiber_g": 0,
+                "week_number": 0 }
     date_obj = datetime.strptime(date, "%Y-%m-%d").date()
 
     for week in user_data["Weekly_Plan"]:
@@ -99,6 +103,17 @@ def view_macros_full(user_id: str) -> Dict[str, Any]:
     user_data = macro_collection.find_one({"user_id": user_id}, {"_id": 0})
 
     if not user_data:
-        raise ValueError(f"No macro plan found for user_id: {user_id}")
+        return {
+          "BMR": 0,
+          "TDEE": 0,
+          "goal_type": 'None',
+          "total_weeks": 0,
+          "start_weight_kg": 0,
+          "target_weight_kg": 0,
+          "Target_Change": 0,
+          "Weekly_Plan": 0,
+          "created_at": 0,
+          "updated_at": 0,
+        }
 
     return user_data

@@ -42,14 +42,11 @@ def suggest_food(req):
     top_bases = pick_top_base_foods(base_foods_all, remaining.get("calories", 0), n=5)
     top_boosters = pick_top_protein_boosters(protein_boosters_all, n=2)
 
-    # ensure minimal normalization
     top_bases = [normalize_item(it) for it in top_bases]
     top_boosters = [normalize_item(it) for it in top_boosters]
 
-    # 4. Build prompt and call LLM (small payload)
     prompt = build_prompt(top_bases, top_boosters, remaining)
     try:
-        #llm_json = call_llm(prompt)  # must return parsed dict with key "suggestions"
         llm_json=call_llm(prompt)
     except NotImplementedError as e:
         return (f'the error is {e}')

@@ -22,16 +22,14 @@ origins = [
     "http://127.0.0.1:5173",
 ]
 
-# Enable CORS for frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Pydantic models
 class UserCreate(BaseModel):
     name:str
     email: str
@@ -41,7 +39,6 @@ class UserLogin(BaseModel):
     email: str
     password: str
 
-# Signup route
 @app.post("/auth/signup")
 def signup(user: UserCreate):
     if user_data.find_one({"email": user.email}):
@@ -53,7 +50,6 @@ def signup(user: UserCreate):
     token = create_access_token({"sub": user.email,"user_id":user_id})
     return {"token": token,"user_id": user_id,"name":user.name}
 
-# Login route
 @app.post("/auth/login")
 def login(user: UserLogin):
     db_user = user_data.find_one({"email": user.email})

@@ -8,6 +8,7 @@ user_col = None
 try:
     from db_connection import db as _db
     user_col = _db['users']
+    user_data_col=_db['user_data']
     print("Using user_col from db_connection module")
 except Exception:
     user_col = None
@@ -61,6 +62,17 @@ def view_user(user_id: str) -> Dict[str, Any]:
 
     stored_doc = user_col.find_one(filter_q, {"_id": 0})
     if not stored_doc:
-        raise ValueError(f"User with user_id {user_id} not found.")
+        temp_doc=user_data_col.find_one(filter_q, {"_id": 0, "name": 1})
+        return {
+          "name": temp_doc["name"],
+          "age": 0,
+          "gender": 'NA',
+          "height_cm": 0,
+          "weight_kg": 0,
+          "activity_level":"NA",
+          "goal": "NA",
+          "target_weeks": 0,
+          "target_weight_kg": 0,
+        }
 
     return stored_doc

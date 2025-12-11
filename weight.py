@@ -4,7 +4,6 @@ def log_user_weight(user_id: str, weight: float, date: datetime = None):
     if date is None:
         date = datetime.today().strftime("%Y-%m-%d")
     
-    # Upsert: update if exists, otherwise insert
     result = weight_col.update_one(
         {"user_id": user_id, "date": date},
         {"$set": {"weight": weight}},

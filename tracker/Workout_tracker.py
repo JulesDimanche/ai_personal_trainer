@@ -8,7 +8,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 try:
-    client_gemini = genai.Client()
+    api_key=os.getenv("WORKOUT_GEMINI_KEY")
+    client_gemini = genai.Client(api_key=api_key)
 except Exception as e:
     print(f"Error initializing Gemini client: {e}")
     client_gemini = None

@@ -5,8 +5,6 @@ google-genai
 openai
 duckdb
 pandas
-transformers
-accelerate
 torch
 fastapi
 sentence_transformers

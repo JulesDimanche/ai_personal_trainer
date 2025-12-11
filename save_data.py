@@ -11,7 +11,6 @@ def bulk_upsert(collection, data, unique_fields):
     ops = []
 
     for item in data:
-        # Build unique filter (ex: cuisine + meal_type + food_name)
         unique_filter = {field: item[field] for field in unique_fields}
 
         ops.append(

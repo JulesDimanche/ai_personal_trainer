@@ -6,7 +6,8 @@ from google.genai import types
 from dotenv import load_dotenv  
 load_dotenv()
 try:
-    client_gemini = genai.Client()
+    api_key=os.getenv("CALORIES_GEMINI_KEY")
+    client_gemini = genai.Client(api_key=api_key)
 except Exception as e:
     print(f"Error initializing Gemini client: {e}")
     client_gemini = None

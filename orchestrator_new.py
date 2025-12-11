@@ -56,7 +56,7 @@ except Exception as e:
     client_gemini = None
     
 SPLIT_MODEL_NAME = "gemini-2.5-flash" 
-FINAL_MODEL_NAME = "gemini-2.0-flash-lite" 
+FINAL_MODEL_NAME = "gemini-2.5-flash" 
 
 def days_between(start_iso: str, end_iso: str) -> int:
     try:
