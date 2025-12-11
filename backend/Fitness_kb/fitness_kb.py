@@ -2,7 +2,7 @@ import json
 import faiss
 import numpy as np
 from typing import List
-from sentence_transformers import SentenceTransformer
+from fastembed import TextEmbedding
 
 
 FITNESS_KB = [
@@ -18,17 +18,20 @@ FITNESS_KB = [
     "Overestimating calorie burn can lead to accidental calorie surplus and fat gain.",
 ]
 
+
 def build_vector_db(
     kb_items: List[str],
-    json_output_path="Fitness_kb/fitness_kb.json",
-    index_output_path="Fitness_kb/fitness_kb.index",
-    embedding_model_name="sentence-transformers/all-MiniLM-L6-v2"
+    json_output_path="fitness_kb.json",
+    index_output_path="fitness_kb.index",
+    embedding_model_name="BAAI/bge-small-en-v1.5"
 ):
-    print("Loading embedding model...")
-    model = SentenceTransformer(embedding_model_name)
+
+    print("Loading lightweight embedding model...")
+    model = TextEmbedding(embedding_model_name)
 
     print("Encoding KB...")
-    embeddings = model.encode(kb_items, convert_to_numpy=True)
+    embeddings = list(model.embed(kb_items))
+    embeddings = np.array(embeddings, dtype="float32")   # Convert to numpy
 
     dimension = embeddings.shape[1]
 

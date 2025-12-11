@@ -5,6 +5,7 @@ pydantic
 faiss-cpu
 duckdb
 pandas
+numpy
 
 # For LLMs
 openai
@@ -14,8 +15,8 @@ google-genai
 pymongo
 
 # Embedding / ML
-sentence-transformers
 python-dotenv
+fastembed 
 
 # JWT
 python-jose[cryptography]

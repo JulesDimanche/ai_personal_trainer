@@ -2,7 +2,7 @@ import os
 import re
 import duckdb
 from functools import lru_cache
-import sys
+from typing import Tuple
 
 try:
     from orchestrator_new import client_deepseek, EXTRA_HEADERS
