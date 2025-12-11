@@ -8,7 +8,7 @@ import pandas as pd
 import duckdb
 
 try:
-    import db_connection as dbc
+    import backend.db_connection as dbc
     mongo_db = dbc.db
     diet_col = getattr(dbc, "diet_col", mongo_db["diet_logs"])
     workout_col = getattr(dbc, "workout_col", mongo_db["workouts_logs"])

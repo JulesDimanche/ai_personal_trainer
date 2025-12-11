@@ -5,7 +5,7 @@ import re
 from pymongo import MongoClient
 import sys
 sys.path.append('..')
-from db_connection import db
+from backend.db_connection import db
 
 QUERY_TEMPLATES = {
     "weekly_progress": lambda start_date, end_date, user_id: {

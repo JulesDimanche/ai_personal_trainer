@@ -1,5 +1,5 @@
 import datetime
-from db_connection import workout_summary_col
+from backend.db_connection import workout_summary_col
 def handle_wo_summary_trigger(user_id, summary_text, timestamp):
     try:
         date_str=timestamp

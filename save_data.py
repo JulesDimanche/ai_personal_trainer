@@ -1,4 +1,4 @@
-from db_connection import food_normal_col,food_protein_col
+from backend.db_connection import food_normal_col,food_protein_col
 import json
 from pymongo import UpdateOne
 

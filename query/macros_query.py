@@ -7,7 +7,7 @@ from pymongo import MongoClient
 from openai import OpenAI
 import sys
 sys.path.append('..')
-from db_connection import db
+from backend.db_connection import db
 
 
 def build_macros_query(data, user_id):

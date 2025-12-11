@@ -6,7 +6,7 @@ from tracker.progress_tracker import generate_initial_week
 macro_collection = None
 
 try:
-    from db_connection import db as _db
+    from backend.db_connection import db as _db
     macro_collection = _db['macro_plans']
     print("Using macro_collection from db_connection module")
 except Exception:

@@ -9,7 +9,7 @@ Its purpose:
 """
 
 from datetime import datetime, timedelta
-from db_connection import macro_collection
+from backend.db_connection import macro_collection
 from tracker.progress_tracker import aggregate_and_adapt_week
 import traceback
 

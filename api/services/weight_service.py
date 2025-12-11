@@ -3,7 +3,7 @@ import os
 
 weight_col=None
 try:
-    from db_connection import db
+    from backend.db_connection import db
     weight_col=db["weights"]
     print("weight_col is loaded from mongodb")
 except Exception:

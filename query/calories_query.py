@@ -4,7 +4,7 @@ import ast
 from pymongo import MongoClient
 import sys
 sys.path.append('..')
-from db_connection import db
+from backend.db_connection import db
 
 QUERY_TEMPLATES = {
     "calories": lambda date, user_id: {

@@ -4,16 +4,14 @@ from pydantic import BaseModel
 from datetime import timedelta
 import uuid
 from dependencies import get_current_user
-import sys
-sys.path.append('..')
 from api.routes.macros_route import router as macro_router
 from api.routes.calories_route import router as calories_router
 from api.routes.workout_route import router as workout_router
-#from api.routes.query_route import router as query_router
+from api.routes.query_route import router as query_router
 from api.routes.user_route import router as user_router
 from api.routes.weight_route import router as weight_router
-from api.routes.food_sug_rotue import router as food_sug_router
-from db_connection import user_data
+from api.routes.food_sug_route import router as food_sug_router
+from backend.db_connection import user_data
 from auth import hash_password, verify_password, create_access_token
 
 app = FastAPI()
@@ -70,7 +68,7 @@ def dashboard(user = Depends(get_current_user)):
 app.include_router(macro_router)
 app.include_router(calories_router)
 app.include_router(workout_router)
-#app.include_router(query_router)
+app.include_router(query_router)
 app.include_router(user_router)
 app.include_router(weight_router)
 app.include_router(food_sug_router)

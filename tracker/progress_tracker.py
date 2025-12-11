@@ -2,10 +2,7 @@ from pymongo import MongoClient, ASCENDING
 from datetime import datetime, timedelta
 from typing import Dict, Any, Optional, List
 import math
-import os
-import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from db_connection import progress_col,macro_collection,progress_weekly_col,weight_col,summary_col,workout_summary_col
+from backend.db_connection import progress_col,macro_collection,progress_weekly_col,weight_col,summary_col,workout_summary_col
 
 
 def iso_date(dt: datetime) -> str:

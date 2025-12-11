@@ -3,7 +3,7 @@ from api.routes.macros_route import router as macro_router
 from api.routes.user_route import router as user_router
 from api.routes.calories_route import router as calories_router
 from api.routes.workout_route import router as workout_router
-from api.routes.food_sug_rotue import router as food_sug
+from api.routes.food_sug_route import router as food_sug
 #from api.routes.query_route import router as query_router
 app = FastAPI(title="Macro API Wrapper")
 

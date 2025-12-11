@@ -3,8 +3,6 @@ import re
 import duckdb
 from functools import lru_cache
 from typing import Tuple
-import sys
-sys.path.append('..')
 
 try:
     from orchestrator_new import client_deepseek, EXTRA_HEADERS

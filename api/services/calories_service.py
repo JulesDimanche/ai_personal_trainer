@@ -6,7 +6,7 @@ from tracker.progress_tracker import update_daily_progress
 import datetime
 calories_col = None
 try:
-    from db_connection import db as _db
+    from backend.db_connection import db as _db
     calories_col = _db['diet_logs']
     print("Using calories_col from db_connection module")
 except Exception:

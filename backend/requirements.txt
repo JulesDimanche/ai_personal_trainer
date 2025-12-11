@@ -1,0 +1,18 @@
+fastapi
+uvicorn[standard]
+pydantic
+
+faiss-cpu
+duckdb
+pandas
+
+# For LLMs
+openai
+google-genai
+
+# Mongo
+pymongo
+
+# Embedding / ML
+sentence-transformers
+python-dotenv

@@ -6,7 +6,7 @@ from tracker.progress_tracker import update_daily_progress
 import datetime
 workout_col = None
 try:
-    from db_connection import db as _db
+    from backend.db_connection import db as _db
     workout_col = _db['workouts_logs']
     print("Using workout_col from db_connection module")
 except Exception:
@@ -24,7 +24,7 @@ if workout_col is None:
         workout_col = None
 workout_plan_col = None
 try:
-    from db_connection import db as _db
+    from backend.db_connection import db as _db
     workout_plan_col = _db['workout_plan']
     print("Using workout_plan_col from db_connection module")
 except Exception:
