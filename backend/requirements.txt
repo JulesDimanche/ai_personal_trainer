@@ -16,3 +16,7 @@ pymongo
 # Embedding / ML
 sentence-transformers
 python-dotenv
+
+# JWT
+python-jose[cryptography]
+python-multipart
