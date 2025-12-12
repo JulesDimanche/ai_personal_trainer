@@ -1,0 +1,31 @@
+name: Daily Update Job
+
+on:
+  schedule:
+    # Runs every day at 6:00 AM IST  -> 00:30 UTC
+    - cron: "30 0 * * *"
+  workflow_dispatch:  # allows manual trigger from GitHub UI
+
+jobs:
+  run-daily-script:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          pip install -r git_req.txt
+
+      - name: Run update script
+        env:
+          MONGO_URI: ${{ secrets.MONGO_URI }}
+          MONGO_DB_NAME: ${{ secrets.MONGO_DB_NAME }}
+        run: |
+          python backend/server/run_etl.py

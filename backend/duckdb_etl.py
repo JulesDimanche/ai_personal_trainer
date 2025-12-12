@@ -1,4 +1,3 @@
-# duckdb_etl.py
 import os
 import json
 import time
@@ -15,25 +14,21 @@ try:
     progress_col = getattr(dbc, "progress_col", mongo_db["progress"])
 except Exception:
     from pymongo import MongoClient
-    MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
-    DB_NAME = os.getenv("DB_NAME", "test")
+    MONGO_URI = os.environ.get("MONGO_URI")
+    DB_NAME = os.environ.get("DB_NAME")
     client = MongoClient(MONGO_URI)
     mongo_db = client[DB_NAME]
     diet_col = mongo_db["diet_logs"]
     workout_col = mongo_db["workouts_logs"]
     progress_col = mongo_db["progress"]
 
-DUCKDB_PATH = os.getenv("DUCKDB_PATH", "trainer.duckdb")
+DUCKDB_PATH = ("trainer.duckdb")
 ETL_METADATA_TABLE = "etl_metadata"
 
 con = duckdb.connect(DUCKDB_PATH)
 
 
 def init_schema():
-    """
-    Creates the foods and workouts tables if they don't exist.
-    Also creates the etl metadata table.
-    """
     con.execute(
         """
         CREATE TABLE IF NOT EXISTS foods (
@@ -129,13 +124,6 @@ def set_last_etl_run(ts: datetime):
 
 
 def flatten_diet_doc(doc: Dict[str, Any]) -> List[Dict[str, Any]]:
-    """
-    Turns a single Mongo diet_logs doc into multiple rows for the foods table.
-    Handles created_at/updated_at consistently:
-      - If both exist, use them.
-      - If only created_at exists, use it for both.
-      - If neither exists, fallback to current UTC time.
-    """
     rows = []
     _id = str(doc.get("_id"))
     user_id = doc.get("user_id")
@@ -182,13 +170,6 @@ def flatten_diet_doc(doc: Dict[str, Any]) -> List[Dict[str, Any]]:
     return rows
 
 def flatten_workout_doc(doc: Dict[str, Any]) -> List[Dict[str, Any]]:
-    """
-    Turns a single Mongo workouts_logs doc into multiple rows for the workouts table.
-    Handles created_at/updated_at consistently:
-      - If both exist, use them.
-      - If only created_at exists, use it for both.
-      - If neither exists, fallback to current UTC time.
-    """
     rows = []
     _id = str(doc.get("_id"))
     user_id = doc.get("user_id")
@@ -259,12 +240,6 @@ def flatten_progress_doc(doc: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 def etl_incremental():
-    """
-    Incremental ETL:
-    - Syncs only documents created or updated since last_etl_run.
-    - Handles both datetime and string timestamps.
-    - Works correctly even if ETL runs multiple times per day.
-    """
     init_schema()
     last_run = get_last_etl_run()
 

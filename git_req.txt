@@ -1,0 +1,4 @@
+duckdb
+pymongo
+pandas
+traceback

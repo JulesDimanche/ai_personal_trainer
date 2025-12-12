@@ -1,17 +1,19 @@
-"""
-weekly_adaptation_cron.py
-
-This script is executed daily by Render Cron Tasks.
-Its purpose:
-1. Loop through all users' macro documents.
-2. Identify the week whose end_date == yesterday.
-3. Trigger aggregate_and_adapt_week(user_id, start_date)
-"""
-
 from datetime import datetime, timedelta
 from db_connection import macro_collection
 from tracker.progress_tracker import aggregate_and_adapt_week
 import traceback
+import os
+from pymongo import MongoClient
+try:
+    from db_connection import macro_collection
+except Exception:
+    MONGO_URI = os.environ.get("MONGO_URI")
+    DB_NAME = os.environ.get("DB_NAME")
+
+    client = MongoClient(MONGO_URI)
+    db = client[DB_NAME]
+
+    macro_collection = db["macro_plans"]
 
 def iso(dt: datetime) -> str:
     return dt.strftime("%Y-%m-%d")
@@ -23,7 +25,6 @@ def run_weekly_adaptation():
 
     print(f"[CRON] Weekly adaptation running for date: {yesterday_str}")
 
-    # Fetch all user plans
     plans = list(macro_collection.find({}))
 
     for plan in plans:
@@ -33,7 +34,6 @@ def run_weekly_adaptation():
         if not user_id or not weekly_plan:
             continue
 
-        # Find which week ends yesterday
         for week in weekly_plan:
             end_date = week.get("end_date")
             start_date = week.get("start_date")
@@ -45,7 +45,6 @@ def run_weekly_adaptation():
                 print(f"[CRON] Match found → User: {user_id}, Week ending: {end_date}")
 
                 try:
-                    # Call main function
                     result = aggregate_and_adapt_week(user_id, start_date)
                     print(f"[CRON] Adaptation completed for {user_id}")
                     print(result.get("weekly_summary", {}))
