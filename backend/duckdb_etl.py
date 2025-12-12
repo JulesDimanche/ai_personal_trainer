@@ -5,15 +5,8 @@ from datetime import datetime
 from typing import List, Dict, Any
 import pandas as pd
 import duckdb
-
+from pymongo import MongoClient
 try:
-    import db_connection as dbc
-    mongo_db = dbc.db
-    diet_col = getattr(dbc, "diet_col", mongo_db["diet_logs"])
-    workout_col = getattr(dbc, "workout_col", mongo_db["workouts_logs"])
-    progress_col = getattr(dbc, "progress_col", mongo_db["progress"])
-except Exception:
-    from pymongo import MongoClient
     MONGO_URI = os.environ.get("MONGO_URI")
     DB_NAME = os.environ.get("DB_NAME")
     client = MongoClient(MONGO_URI)
@@ -21,7 +14,12 @@ except Exception:
     diet_col = mongo_db["diet_logs"]
     workout_col = mongo_db["workouts_logs"]
     progress_col = mongo_db["progress"]
-
+except Exception:
+    import db_connection as dbc
+    mongo_db = dbc.db
+    diet_col = getattr(dbc, "diet_col", mongo_db["diet_logs"])
+    workout_col = getattr(dbc, "workout_col", mongo_db["workouts_logs"])
+    progress_col = getattr(dbc, "progress_col", mongo_db["progress"])
 DUCKDB_PATH = ("trainer.duckdb")
 ETL_METADATA_TABLE = "etl_metadata"
 

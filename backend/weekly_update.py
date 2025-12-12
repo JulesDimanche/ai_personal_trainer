@@ -1,12 +1,9 @@
 from datetime import datetime, timedelta
-from db_connection import macro_collection
 from tracker.progress_tracker import aggregate_and_adapt_week
 import traceback
 import os
 from pymongo import MongoClient
 try:
-    from db_connection import macro_collection
-except Exception:
     MONGO_URI = os.environ.get("MONGO_URI")
     DB_NAME = os.environ.get("DB_NAME")
 
@@ -14,6 +11,9 @@ except Exception:
     db = client[DB_NAME]
 
     macro_collection = db["macro_plans"]
+except Exception:
+    from db_connection import macro_collection
+
 
 def iso(dt: datetime) -> str:
     return dt.strftime("%Y-%m-%d")

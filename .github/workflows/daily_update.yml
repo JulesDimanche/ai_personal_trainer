@@ -26,6 +26,6 @@ jobs:
       - name: Run update script
         env:
           MONGO_URI: ${{ secrets.MONGO_URI }}
-          MONGO_DB_NAME: ${{ secrets.MONGO_DB_NAME }}
+          DB_NAME: ${{ secrets.DB_NAME }}
         run: |
           python backend/run_etl.py

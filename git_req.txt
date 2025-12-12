@@ -1,3 +1,4 @@
 duckdb
 pymongo
 pandas
+python-dotenv
