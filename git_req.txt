@@ -1,4 +1,3 @@
 duckdb
 pymongo
 pandas
-traceback
