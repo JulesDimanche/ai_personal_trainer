@@ -28,4 +28,4 @@ jobs:
           MONGO_URI: ${{ secrets.MONGO_URI }}
           MONGO_DB_NAME: ${{ secrets.MONGO_DB_NAME }}
         run: |
-          python backend/server/run_etl.py
+          python backend/run_etl.py
