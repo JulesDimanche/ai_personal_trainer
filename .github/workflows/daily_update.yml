@@ -29,3 +29,10 @@ jobs:
           DB_NAME: ${{ secrets.DB_NAME }}
         run: |
           python run_parquet.py
+          
+      - name: Commit parquet and ETL state
+        run: |
+          git add parquet/foods etl_state.json
+          git commit -m "Daily foods parquet update" || echo "No changes"
+          git push
+

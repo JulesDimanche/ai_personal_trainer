@@ -8,6 +8,8 @@ from typing import List, Dict, Any
 import pandas as pd
 import duckdb
 from pymongo import MongoClient
+from pathlib import Path
+
 try:
     MONGO_URI = os.environ.get("MONGO_URI")
     DB_NAME = os.environ.get("DB_NAME")
@@ -23,7 +25,7 @@ except Exception:
     workout_col = getattr(dbc, "workout_col", mongo_db["workouts_logs"])
     progress_col = getattr(dbc, "progress_col", mongo_db["progress"])
 DUCKDB_PATH = ("trainer.duckdb")
-ETL_METADATA_TABLE = "etl_metadata"
+ETL_STATE_FILE = "etl_state.json"
 
 con = duckdb.connect(DUCKDB_PATH)
 
@@ -94,34 +96,21 @@ def init_schema():
     """
     )
 
-    con.execute(
-        f"""
-        CREATE TABLE IF NOT EXISTS {ETL_METADATA_TABLE} (
-            key TEXT PRIMARY KEY,
-            value TEXT
-        );
-        """
-    )
-    res = con.execute(f"SELECT value FROM {ETL_METADATA_TABLE} WHERE key='last_etl_run'").fetchall()
-    if not res:
-        con.execute(f"INSERT INTO {ETL_METADATA_TABLE} VALUES ('last_etl_run', NULL);")
 
+def get_last_etl_run():
+    if not Path(ETL_STATE_FILE).exists():
+        return None
 
-def get_last_etl_run() -> datetime | None:
-    row = con.execute(
-        f"SELECT value FROM {ETL_METADATA_TABLE} WHERE key='last_etl_run'"
-    ).fetchone()
+    with open(ETL_STATE_FILE, "r") as f:
+        data = json.load(f)
 
-    if row and row[0]:
-        return datetime.fromisoformat(row[0])
-
-    return None
+    ts = data.get("last_etl_run")
+    return datetime.fromisoformat(ts) if ts else None
 
 
 def set_last_etl_run(ts: datetime):
-    iso = ts.isoformat()
-    con.execute(f"INSERT OR REPLACE INTO {ETL_METADATA_TABLE} VALUES ('last_etl_run', ?)", [iso])
-
+    with open(ETL_STATE_FILE, "w") as f:
+        json.dump({"last_etl_run": ts.isoformat()}, f)
 
 def flatten_diet_doc(doc: Dict[str, Any]) -> List[Dict[str, Any]]:
     rows = []
