@@ -30,6 +30,11 @@ jobs:
         run: |
           python run_parquet.py
           
+      - name: Set git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
       - name: Commit parquet and ETL state
         run: |
           git add parquet/foods etl_state.json
