@@ -199,7 +199,7 @@ def flatten_workout_doc(doc: Dict[str, Any]) -> List[Dict[str, Any]]:
             "muscle_group": ex.get("muscle_group"),
             "sets": int(ex.get("sets") or 0),
             "reps": json.dumps(ex.get("reps") or []),
-            "weight": float(ex.get("weight") or 0) if ex.get("weight") is not None else None,
+            "weight": json.dumps(ex.get("weight") or []),
             "duration_minutes": float(ex.get("duration_minutes") or 0) if ex.get("duration_minutes") is not None else None,
             "calories_burned": float(ex.get("calories_burned") or 0) if ex.get("calories_burned") is not None else None,
             "source_doc_id": _id,
