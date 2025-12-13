@@ -2,3 +2,5 @@ duckdb
 pymongo
 pandas
 python-dotenv
+pyarrow 
+fastparquet
