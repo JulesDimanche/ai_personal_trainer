@@ -58,7 +58,7 @@ def init_schema():
             muscle_group TEXT,
             sets INTEGER,
             reps TEXT, -- JSON string of reps list
-            weight DOUBLE,
+            weight TEXT,
             duration_minutes DOUBLE,
             calories_burned DOUBLE,
             source_doc_id TEXT,
