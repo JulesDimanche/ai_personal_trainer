@@ -24,6 +24,9 @@ jobs:
           pip install -r git_req.txt
 
       - name: Run update script
+        env:
+          MONGO_URI: ${{ secrets.MONGO_URI }}
+          DB_NAME: ${{ secrets.DB_NAME }}
         run: |
-          python backend.run_etl.py
+          python backend/run_etl.py
           
