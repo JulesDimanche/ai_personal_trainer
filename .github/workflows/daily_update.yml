@@ -25,5 +25,5 @@ jobs:
 
       - name: Run update script
         run: |
-          python run_etl.py
+          python backend.run_etl.py
           
