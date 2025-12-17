@@ -1,4 +1,4 @@
-from duckdb_etl import etl_incremental
+from etl.db_etl import start_etl
 from weekly_update import run_weekly_adaptation
-etl_incremental()
+start_etl()
 run_weekly_adaptation()

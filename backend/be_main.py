@@ -39,9 +39,6 @@ class UserLogin(BaseModel):
 
 @app.post("/auth/signup")
 def signup(user: UserCreate= Body(...)):
-    print("DEBUG-PASSWORD:", repr(user.password))
-    print("TYPE:", type(user.password))
-    print("LENGTH:", len(user.password))
 
     if user_data.find_one({"email": user.email}):
         raise HTTPException(status_code=400, detail="Email already registered")

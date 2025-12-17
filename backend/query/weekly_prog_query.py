@@ -1,4 +1,3 @@
-# weekly_progress_query.py
 import os
 import json
 import re

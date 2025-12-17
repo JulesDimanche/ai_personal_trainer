@@ -31,14 +31,13 @@ try:
 except Exception:
     mongo_macros = None
 try:
-    import sql_query.text_to_sql_runner as sql_runner
+    import week_query.cal_query as cal_query
 except Exception:
-    sql_runner = None
+    cal_query = None
 try:
-    import sql_query.text_to_sql_prog as sql_progress
+    import week_query.workout_query as workout_query
 except Exception:
-    sql_progress = None
-
+    workout_query = None
 load_dotenv()
 client_deepseek = OpenAI(
     api_key=os.environ.get("DEEPSEEK_API_KEY"),
@@ -71,12 +70,13 @@ You are an expert assistant that breaks a user's natural-language fitness questi
 Adhere strictly to the JSON schema and rules. Today's date is {today_date}.
 
 --- RULES ---
-2. **Intent Types**: "calories", "workout", "daily_progress", "weekly_progress", "macros", "other", "reasoning".
+2. **Intent Types**: "calories" for (food or calories or meals), "workout", "weekly_progress", "macros", "other", "reasoning".
 3. **Data Fetching Order**: Data intents MUST come first ("calories", "workout", etc.).
 4. **Final Intents**: "reasoning" (for 'why', 'explain', 'stagnation') or "other" (for general summary/comparison) MUST come last.
 5. **Reasoning Intent Logic**: For any 'why', 'explain', or stagnation question (e.g., 'why not growing'), automatically include all required data intents first: 'workout' (always), 'calories' (always), 'macros' (if related to weight/muscle), and then 'reasoning' as the final step.
 6. **Date Logic**: Convert explicit dates to ISO format. Dates are `null` for "other" or "reasoning" unless the user specifies a range for the analysis. Always include start_date and end_date, if date not present set it as null.
-7. **Subquery Text**: Keep it short and actionable.
+7. **Calories Intent**: must include start_date, end_date, food (string|null), food_breakdown (boolean) 
+8. **Workout Intent**: must include start_date, end_date, exercise (string|null), muscle_group (string|null), exercise_breakdown (boolean)
 """
 
 def split_into_subqueries(user_question: str) -> List[Dict[str, Any]]:
@@ -92,23 +92,35 @@ def split_into_subqueries(user_question: str) -> List[Dict[str, Any]]:
     """
     try:
         response = client_gemini.models.generate_content(
-            model=SPLIT_MODEL_NAME,
-            contents=[
-                {"role": "user", "parts": [{"text": user_prompt}]}
-            ],
-            config=genai.types.GenerateContentConfig(
-                system_instruction=SYSTEM_PROMPT.format(today_date=today_str),
-                temperature=0.0,
-                response_schema={"type": Type.ARRAY, "items": {"type": Type.OBJECT, "properties": {
-                    "intent": {"type": Type.STRING},
-                    "subquery": {"type": Type.STRING},
-                    
-                    "start_date": {"type": Type.STRING, "nullable": True}, 
-                    "end_date": {"type": Type.STRING, "nullable": True}
-                    
-                }}}
-            )
+        model=SPLIT_MODEL_NAME,
+        contents=[
+            {"role": "user", "parts": [{"text": user_prompt}]}
+        ],
+        config=genai.types.GenerateContentConfig(
+            system_instruction=SYSTEM_PROMPT.format(today_date=today_str),
+            temperature=0.0,
+            response_schema={
+                "type": Type.ARRAY,
+                "items": {
+                    "type": Type.OBJECT,
+                    "properties": {
+                        "intent": {"type": Type.STRING},
+
+                        "start_date": {"type": Type.STRING, "nullable": True},
+                        "end_date": {"type": Type.STRING, "nullable": True},
+
+                        "exercise": {"type": Type.STRING, "nullable": True},
+                        "muscle_group": {"type": Type.STRING, "nullable": True},
+                        "exercise_breakdown": {"type": Type.BOOLEAN, "nullable": True},
+
+                        "food": {"type": Type.STRING, "nullable": True},
+                        "food_breakdown": {"type": Type.BOOLEAN, "nullable": True}
+                    }
+                }
+            }
         )
+    )
+
         
         raw = response.text.strip()
         m = re.search(r'(\[.*\])', raw, re.DOTALL | re.IGNORECASE)
@@ -140,36 +152,31 @@ def choose_backend_for_subquery(intent: str, start_date: str, end_date: str) -> 
     days = 0
     if start_date and end_date:
         days = days_between(start_date, end_date)
-
-    if intent in ("daily_progress", "progress"):
-        return "duckdb"
-
     if intent == "weekly_progress":
         return "mongo"
     if intent=="macros":
         return "mongo"
     if intent in ("calories", "workout"):
-        if days > 0 or (not start_date and not end_date):
-            return "duckdb"
+        if days > 2 or (not start_date and not end_date):
+            return "full"
         elif days == 0 and (not start_date or not end_date):
             return "mongo"
         else:
             return "mongo"
 
     if intent == "other":
-        return "duckdb" if days > 2 else "mongo"
+        return "mongo"
 
     return "mongo"
 
 def run_subquery_item(item: Dict[str, Any], user_id: str) -> Dict[str, Any]:
     intent = (item.get("intent") or "other").lower()
-    text = item.get("subquery") or item.get("query") or ""
     start_date = item.get("start_date")
     end_date = item.get("end_date")
 
     backend = choose_backend_for_subquery(intent, start_date, end_date)
 
-    result = {"intent": intent, "backend": backend, "query_text": text, "data": [], "summary": None}
+    result = {"intent": intent, "backend": backend,"data": [], "summary": None}
     
     if backend == "mongo":
          try:
@@ -200,14 +207,6 @@ def run_subquery_item(item: Dict[str, Any], user_id: str) -> Dict[str, Any]:
                 result["data"] = rows
                 return result
 
-            if mongo_calories:
-                q = mongo_calories.build_query(item, user_id)
-                rows = mongo_calories.execute_query(q)
-                rows = mongo_calories.to_toon_compact(rows)
-                result["data"] = rows
-                result["summary"] = None
-                return result
-
             result["data"] = []
             return result
 
@@ -217,23 +216,16 @@ def run_subquery_item(item: Dict[str, Any], user_id: str) -> Dict[str, Any]:
 
     else:
         try:
-            if intent in ("daily_progress","progress") and sql_progress:
-                sql = sql_progress.generate_sql(text, user_id)
-                df = sql_progress.execute_sql_on_duckdb(sql)
-                result["data"] = json.loads(df.to_json(orient="records", date_format="iso"))
-                result["summary"] = None
+            if intent == "calories" and cal_query:
+                rows = cal_query.handle_food_summary_query(item, user_id)
+                rows=cal_query.to_toon_compact(rows)
+                result["data"] = rows
                 return result
 
-            if intent == "calories" and sql_runner:
-                sql = sql_runner.generate_sql(text, user_id)
-                df = sql_runner.execute_sql_on_duckdb(sql)
-                result["data"] = json.loads(df.to_json(orient="records", date_format="iso"))
-                return result
-
-            if intent == "workout" and sql_runner:
-                sql = sql_runner.generate_sql(text, user_id)
-                df = sql_runner.execute_sql_on_duckdb(sql)
-                result["data"] = json.loads(df.to_json(orient="records", date_format="iso"))
+            if intent == "workout" and workout_query:
+                rows = workout_query.handle_workout_summary_query(item, user_id)
+                rows=workout_query.to_toon_compact(rows)
+                result["data"] = rows
                 return result
 
             result["data"] = []
@@ -301,7 +293,7 @@ def temp_final_answer(collected: Dict[str, Any]) -> str:
         {
             "role": "user",
             "content": f"Here is the user's data:\n\n{context}\n\n"
-                       f"Now give the answer in simple English, no JSON, no objects."
+                       f"Now give the answer in simple English, no JSON, no objects,don't include user_id"
         }
     ]
 
@@ -326,9 +318,9 @@ def answer_user_query(user_question: str, user_id: str) -> Dict[str, Any]:
     for item in subqueries:
         intent = (item.get("intent") or "").lower()
         if intent == "other":
-            main_user_query = item.get("subquery", "")
+            main_user_query = user_question
         elif intent == "reasoning":
-            reason_user_query = item.get("subquery", "")
+            reason_user_query = user_question
         else:
             data_subqueries.append(item)
     MAX_THREADS = 5
@@ -343,7 +335,7 @@ def answer_user_query(user_question: str, user_id: str) -> Dict[str, Any]:
                 res = {
                     "intent": (item.get("intent") or "unknown"),
                     "backend": None,
-                    "query_text": item.get("subquery", ""),
+                    "query_text": user_question,
                     "data": None,
                     "error": str(e),
                 }

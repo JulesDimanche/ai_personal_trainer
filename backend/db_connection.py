@@ -20,4 +20,5 @@ user_data=db["user_data"]
 workout_plan_col=db["workout_plan"]
 food_normal_col=db["food_normal"]
 food_protein_col=db["food_protein"]
+weekly_summary=db['weekly_summary']
 print("MongoDB connected")

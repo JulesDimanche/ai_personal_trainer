@@ -6,13 +6,10 @@ from dateutil import parser
 from pymongo import MongoClient
 from db_connection import db
 
-
-
-
 WORKOUT_QUERY_TEMPLATES = {
-    "workout": lambda date, user_id: {
+    "workout": lambda date_filter, user_id: {
         "collection": "workouts_logs",
-        "filter": {"user_id": user_id, "date": date},
+        "filter": {"user_id": user_id, "date": date_filter},
         "projection": {
             "workout_data.exercise_name": 1,
             "workout_data.muscle_group": 1,
@@ -53,9 +50,12 @@ def build_workout_query(data, user_id):
     start_date = entities.get("start_date")
     end_date = entities.get("end_date")
     exercise = entities.get("exercise")
+    if start_date and end_date:
+        date_filter = {"$gte": start_date, "$lte": end_date}
+    else:
+        date_filter=start_date or end_date
 
-    date = start_date or end_date
-    return WORKOUT_QUERY_TEMPLATES[intent](date, user_id)
+    return WORKOUT_QUERY_TEMPLATES[intent](date_filter, user_id)
 
 def execute_workout_query(query_json):
     try:

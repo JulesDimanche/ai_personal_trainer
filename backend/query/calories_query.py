@@ -5,9 +5,9 @@ from pymongo import MongoClient
 from db_connection import db
 
 QUERY_TEMPLATES = {
-    "calories": lambda date, user_id: {
+    "calories": lambda date_filter, user_id: {
         "collection": "diet_logs",
-        "filter": {"user_id": user_id, "date": date},
+        "filter": {"user_id": user_id, "date": date_filter},
         "projection": {
             "plan_data.meal_type": 1,
             "plan_data.items.food": 1,
@@ -29,9 +29,12 @@ def build_query(data, user_id):
     start_date = entities.get("start_date")
     end_date = entities.get("end_date")
     food_name = entities.get("food")
+    if start_date and end_date:
+        date_filter = {"$gte": start_date, "$lte": end_date}
+    else:
+        date_filter=start_date or end_date
 
-    date = start_date or end_date
-    return QUERY_TEMPLATES[intent](date, user_id)
+    return QUERY_TEMPLATES[intent](date_filter, user_id)
 
 def execute_query(query_json):
     try:
@@ -121,7 +124,7 @@ def to_toon_compact(data):
 
 if __name__ == "__main__":
     user_id='u001'
-    data={'intent': 'calories', 'backend': 'mongo', 'query_text': 'show macros on 2025-10-21', 'start_date': '2025-10-21', 'end_date': '2025-10-21', 'data': None, 'summary': None}
+    data={'intent': 'calories', 'backend': 'mongo', 'query_text': 'show macros on 2025-10-21', 'start_date': '2025-10-21', 'end_date': '2025-10-22', 'data': None, 'summary': None}
     query = build_query(data,user_id)
     print("Generated Query:", query)
     results = execute_query(query)
