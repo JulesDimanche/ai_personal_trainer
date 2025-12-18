@@ -7,9 +7,7 @@ def get_week_key(date_str: str):
     return f"{year}-W{week}", date_obj
 
 def build_weekly_workout_update(raw_doc):
-    """
-    raw_doc → one daily workout document
-    """
+
     week_key, date_obj = get_week_key(raw_doc["date"])
 
     muscle_updates = {}
@@ -34,14 +32,12 @@ def build_weekly_workout_update(raw_doc):
         avg_weight = round(sum(workout["weight"]) / len(workout["weight"]), 2)
         max_weight = max(workout["weight"])
 
-        # ---------- Totals ----------
         totals["total_exercises"] += 1
         totals["total_sets"] += sets
         totals["total_reps"] += reps
         totals["total_duration_minutes"] += duration
         totals["total_calories_burned"] += calories
 
-        # ---------- Muscle Group ----------
         muscle_updates.setdefault(muscle, {
             "total_sets": 0,
             "total_reps": 0,
@@ -53,7 +49,6 @@ def build_weekly_workout_update(raw_doc):
         muscle_updates[muscle]["total_reps"] += reps
         muscle_updates[muscle]["total_calories"] += calories
 
-        # ---------- Exercise ----------
         ex = muscle_updates[muscle]["exercises"].setdefault(exercise, {
             "sessions": 0,
             "total_sets": 0,

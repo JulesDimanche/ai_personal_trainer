@@ -31,21 +31,18 @@ def build_weekly_food_update(raw_food_doc):
 
         ms = meal["meal_summary"]
 
-        # ---------- Meal Totals ----------
         meal_updates[meal_type]["total_calories"] += ms["total_calories"]
         meal_updates[meal_type]["total_protein"] += ms["total_protein"]
         meal_updates[meal_type]["total_fat"] += ms["total_fat"]
         meal_updates[meal_type]["total_carb"] += ms["total_carb"]
         meal_updates[meal_type]["total_fiber"] += ms["total_fiber"]
 
-        # ---------- Weekly Totals ----------
         totals["total_calories"] += ms["total_calories"]
         totals["total_protein"] += ms["total_protein"]
         totals["total_fat"] += ms["total_fat"]
         totals["total_carb"] += ms["total_carb"]
         totals["total_fiber"] += ms["total_fiber"]
 
-        # ---------- Food Level ----------
         for item in meal["items"]:
             food = item["food"]
 
@@ -86,7 +83,6 @@ def upsert_weekly_food_summary(db, raw_food_doc):
         }
     }
 
-    # ---------- Meal + Food Updates ----------
     for meal_type, m in meal_updates.items():
         meal_prefix = f"nutrition_summary.by_meal_type.{meal_type}"
 
