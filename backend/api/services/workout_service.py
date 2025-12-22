@@ -35,7 +35,8 @@ if workout_plan_col is None:
         MONGO_URI = os.getenv("MONGO_URI")
         if MONGO_URI:
             client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
-            db_from_uri = client.get_default_database() or client["mydb"]
+            DB_NAME = os.getenv("DB_NAME")
+            db_from_uri = client[DB_NAME]
             workout_plan_col = db_from_uri["workout_plan"]
             print("Using workout_plan_col from direct MongoDB connection")
     except Exception:

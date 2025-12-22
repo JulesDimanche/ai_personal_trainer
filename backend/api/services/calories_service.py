@@ -1,6 +1,6 @@
 import os
 from typing import Dict, Any
-from tracker.Calorie_tracker import estimate_calories
+from tracker.calories_track import estimate_calories,enrich_with_macros
 from trigger.diet_trigger import handle_summary_trigger
 from tracker.progress_tracker import update_daily_progress
 import datetime
@@ -17,7 +17,8 @@ if calories_col is None:
         MONGO_URI = os.getenv("MONGO_URI")
         if MONGO_URI:
             client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
-            db_from_uri = client.get_default_database() or client["mydb"]
+            DB_NAME = os.getenv("DB_NAME")
+            db_from_uri =client[DB_NAME]
             calories_col = db_from_uri["diet_logs"]
             print("Using calories_col from direct MongoDB connection")
     except Exception:
@@ -56,6 +57,7 @@ def calculate_calories(calories_payload: Dict[str, Any]) -> Dict[str, Any]:
     user_id=calories_payload["user_id"]
     date=calories_payload.get("date")
     calorie_data = estimate_calories(text)
+    calorie_data = enrich_with_macros(calorie_data)
     try:
         today_str = date
         incoming_meals = calorie_data.get("meals", [])

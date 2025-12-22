@@ -4,14 +4,20 @@ from typing import Dict, Any
 from macro_generator import generate_macro
 
 user_col = None
+user_data_col=None
 
 try:
     from db_connection import db as _db
     user_col = _db['users']
-    user_data_col=_db['user_data']
     print("Using user_col from db_connection module")
 except Exception:
     user_col = None
+try:
+    from db_connection import db as _db
+    user_data_col=_db['user_data']
+    print("Using user_data_col from db_connection module")
+except Exception:
+    user_data_col = None
 
 if user_col is None:
     try:
@@ -19,11 +25,24 @@ if user_col is None:
         MONGO_URI = os.getenv("MONGO_URI")
         if MONGO_URI:
             client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
-            db_from_uri = client.get_default_database() or client["mydb"]
-            user_col = db_from_uri["macros"]
+            DB_NAME = os.getenv("DB_NAME")
+            db_from_uri = client[DB_NAME]
+            user_col = db_from_uri["users"]
             print("Using user_col from direct MongoDB connection")
     except Exception:
         user_col = None
+if user_data_col is None:
+    try:
+        from pymongo import MongoClient
+        MONGO_URI = os.getenv("MONGO_URI")
+        if MONGO_URI:
+            client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
+            DB_NAME = os.getenv("DB_NAME")
+            db_from_uri = client[DB_NAME]
+            user_data_col = db_from_uri["user_data"]
+            print("Using user_data_col from direct MongoDB connection")
+    except Exception:
+        user_data_col = None
 
 def generate_user_data(user_payload: Dict[str, Any]) -> Dict[str, Any]:
     user_payload=dict(user_payload)

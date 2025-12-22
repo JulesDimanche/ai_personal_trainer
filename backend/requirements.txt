@@ -13,6 +13,7 @@ google-genai
 
 # Mongo
 pymongo
+psycopg2
 
 # Embedding / ML
 python-dotenv

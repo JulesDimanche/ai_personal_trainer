@@ -18,8 +18,9 @@ if macro_collection is None:
         MONGO_URI = os.getenv("MONGO_URI")
         if MONGO_URI:
             client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
-            db_from_uri = client.get_default_database() or client["mydb"]
-            macro_collection = db_from_uri["macros"]
+            DB_NAME = os.getenv("DB_NAME")
+            db_from_uri =client[DB_NAME]
+            macro_collection = db_from_uri["macro_plans"]
             print("Using macro_collection from direct MongoDB connection")
     except Exception:
         macro_collection = None
