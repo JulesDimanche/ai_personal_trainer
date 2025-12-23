@@ -1,7 +1,7 @@
 import os
 import json
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Dict, Any
 import pandas as pd
 import duckdb
@@ -24,7 +24,7 @@ except Exception:
     workout_col = getattr(dbc, "workout_col", mongo_db["workouts_logs"])
 
 def start_etl():
-    today=datetime.utcnow().date()
+    today=datetime.utcnow().date()-timedelta(days=1)
     diet_docs = list(
             diet_col.find({
                 "summary.created_at": {"$gte":today.strftime("%Y-%m-%d")}
